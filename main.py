@@ -3,9 +3,7 @@ try:
 except ImportError:
     import urllib2
 
-import MySQLdb
 import json, re
-
 import config
 
 key = config.key
@@ -84,7 +82,7 @@ def getGameName(gameId):
 	output = getUrl("http://store.steampowered.com/app/"+str(gameId)).read()
 	p = re.compile('<div class="apphub_AppName">.*?</div>')
 	m = p.findall(output)
-	name = m[0].split('">')[1].split("</")[0]
+	name = m[0].split('>')[1].split('<')[0]
 	return name 
 
 
