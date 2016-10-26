@@ -2,8 +2,9 @@ from urllib2 import urlopen, Request
 import MySQLdb
 import json, re
 
-global key
-key = "xxxxx"
+import config
+
+key = config.key
 
 def getFriends(steamId):
 	friends = []
