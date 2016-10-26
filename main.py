@@ -1,4 +1,8 @@
-from urllib2 import urlopen, Request
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
+
 import MySQLdb
 import json, re
 
@@ -9,7 +13,7 @@ key = config.key
 def getFriends(steamId):
 	friends = []
 	try:
-		f = urlopen("http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key="+ str(key)+"&steamid="+ str(steamId) +"&relationship=friend")
+		f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key="+ str(key)+"&steamid="+ str(steamId) +"&relationship=friend")
 		data = json.load(f)
 		friendsList = data["friendslist"]["friends"]
 		for friend in friendsList:
@@ -22,7 +26,7 @@ def getFriends(steamId):
 def getPlayerAchievements(steamId, gameId):
 	achievements = {}
 	try:
-		f = urlopen("http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid="+ str(gameId) +"&key="+ str(key) +"&steamid=" + str(steamId))
+		f = urllib2.urlopen("http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid="+ str(gameId) +"&key="+ str(key) +"&steamid=" + str(steamId))
 		data = json.load(f)
 		allAchievements = data["playerstats"]["achievements"]
 		for achievement in allAchievements:
@@ -33,7 +37,7 @@ def getPlayerAchievements(steamId, gameId):
 
 def getOwnedGames(steamId):
 	games = []
-	f = urlopen("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key="+ str(key) +"&steamid=" + str(steamId) + "&format=json")
+	f = urllib2.urlopen("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key="+ str(key) +"&steamid=" + str(steamId) + "&format=json")
 	data = json.load(f)
 	gameList = data["response"]["games"]
 	for game in gameList:
@@ -42,7 +46,7 @@ def getOwnedGames(steamId):
 
 def getGlobalAchievementsPercentage(gameId):
 	globalPercentages = {}
-	f = urlopen("http://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid="+ str(gameId) +"&format=json")
+	f = urllib2.urlopen("http://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid="+ str(gameId) +"&format=json")
 	data = json.load(f)
 	percentages = data["achievementpercentages"]["achievements"]
 	for achievement in percentages:
@@ -60,8 +64,8 @@ def achievementScore(globalAchievements, playerAchievements):
 
 def getUrl(url):
 	try:
-		req = Request(url, headers={'User-Agent' : "Magic Browser"}) 
-		f = urlopen(req)
+		req = urllib2.Request(url, headers={'User-Agent' : "Magic Browser"}) 
+		f = urllib2.urlopen(req)
 		return f
 	except:
 		print ("Error in URL")
