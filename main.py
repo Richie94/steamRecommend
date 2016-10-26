@@ -64,7 +64,7 @@ def getUrl(url):
 		f = urlopen(req)
 		return f
 	except:
-		print "Error in URL"
+		print ("Error in URL")
 		return ""
 
 def getUserTags(gameId):
@@ -91,11 +91,11 @@ def getGameName(gameId):
 # DB Friends: UserID, UserID
 # CREATE TABLE friends ( userId1 int, userId2 int);
 
-# Ulrich, meine, svens
-myList = [76561198020163289, 76561198100742438, 76561198026036441]
-ownedGames = getOwnedGames(myList[2])
+# Ulrich, meine, svens, Luux
+myList = [76561198020163289, 76561198100742438, 76561198026036441,76561198035162874]
+ownedGames = getOwnedGames(myList[3])
 counter = 0
-print len(ownedGames)
+print (len(ownedGames))
 for game in ownedGames:
 	gameId = game[0]
 	playTime = game[1]
@@ -103,7 +103,7 @@ for game in ownedGames:
 	#print counter/(60*24)
 	globalAchievements = getGlobalAchievementsPercentage(gameId)
 	playerAchievements = getPlayerAchievements(myList[0], gameId)
-	print achievementScore(globalAchievements, playerAchievements), gameId, str(playTime) + " min" , getUserTags(gameId), getGameName(gameId)
+	print (achievementScore(globalAchievements, playerAchievements), gameId, str(playTime) + " min" , getUserTags(gameId), getGameName(gameId))
 	#counter += 1
 	#if counter > 10:
 	#	break
