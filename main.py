@@ -8,6 +8,37 @@ import config
 
 key = config.key
 
+# kann bis zu 100 Summaries gleichzeitig abgreifen
+# dictionary mit den IDS als Key und value nen dictionary mit name visibility etc
+def getPlayerSummary(steamIdList):
+	playerDict = {}
+	commaSeparatedList = ','.join(str(x) for x in steamIdList)
+	f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key="+ str(key)+"&steamids="+ commaSeparatedList)
+
+	data = json.load(f)
+	playerList = data["response"]["players"]
+	for player in playerList:
+		personalDict = {}
+		if "realname" in player:
+			personalDict["realname"] = player["realname"]
+		personalDict["visibility"] = player["communityvisibilitystate"]
+		personalDict["timecreated"] = player["timecreated"]
+		if "loccityid" in player:
+			personalDict["loccityid"] = player["loccityid"]
+		if "locstatecode" in player:
+			personalDict["locstatecode"] = player["locstatecode"]
+		if "loccountrycode" in player:
+			personalDict["loccountrycode"] = player["loccountrycode"]
+		if "locstatecode" in player:
+			personalDict["locstatecode"] = player["locstatecode"]
+
+		playerDict[player["steamid"]] = personalDict
+
+	return playerDict
+
+def removeNonAscii(s): 
+	return "".join(i for i in s if ord(i)<128)
+
 def getFriends(steamId):
 	friends = []
 	try:
@@ -27,6 +58,7 @@ def getPlayerAchievements(steamId, gameId):
 		f = urllib2.urlopen("http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid="+ str(gameId) +"&key="+ str(key) +"&steamid=" + str(steamId))
 		data = json.load(f)
 		allAchievements = data["playerstats"]["achievements"]
+		print (data["playerstats"]["gameName"])
 		for achievement in allAchievements:
 			achievements[str(achievement["apiname"])] = achievement["achieved"]
 	except:
@@ -75,15 +107,18 @@ def getUserTags(gameId):
 	p = re.compile('<a href="http://store.steampowered.com/tag/.*?\n.*?\n')
 	m = p.findall(output)
 	for tag in m:
-		tags.append(tag.split("\n")[1].replace("\t", "").split("<")[0])
+		tags.append(removeNonAscii(tag.split("\n")[1].replace("\t", "").split("<")[0]))
 	return tags 
 
 def getGameName(gameId):
 	output = getUrl("http://store.steampowered.com/app/"+str(gameId)).read()
 	p = re.compile('<div class="apphub_AppName">.*?</div>')
 	m = p.findall(output)
-	name = m[0].split('>')[1].split('<')[0]
-	return name 
+	if m:
+		return removeNonAscii(m[0].split('">')[1].split("</")[0])
+	else:
+		return "-- Not found --"
+
 
 
 # DB Played : UserID, GameID, AchievementSumme, Spieldauer
@@ -94,18 +129,23 @@ def getGameName(gameId):
 # CREATE TABLE friends ( userId1 int, userId2 int);
 
 # Ulrich, meine, svens, Luux
-myList = [76561198020163289, 76561198100742438, 76561198026036441,76561198035162874]
-ownedGames = getOwnedGames(myList[3])
-counter = 0
-print (len(ownedGames))
-for game in ownedGames:
-	gameId = game[0]
-	playTime = game[1]
-	#counter += playTime
-	#print counter/(60*24)
-	globalAchievements = getGlobalAchievementsPercentage(gameId)
-	playerAchievements = getPlayerAchievements(myList[0], gameId)
-	print (achievementScore(globalAchievements, playerAchievements), gameId, str(playTime) + " min" , getUserTags(gameId), getGameName(gameId))
-	#counter += 1
-	#if counter > 10:
-	#	break
+import time
+myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
+
+print getPlayerSummary(myList)
+# ownedGames = getOwnedGames(myList[3])
+
+# counter = 0
+# print (len(ownedGames))
+# for game in ownedGames:
+# 	gameId = game[0]
+# 	playTime = game[1]
+# 	time3 = time.time()
+# 	globalAchievements = getGlobalAchievementsPercentage(gameId)
+# 	playerAchievements = getPlayerAchievements(myList[0], gameId)
+# 	time4 = time.time()
+# 	print (achievementScore(globalAchievements, playerAchievements), gameId, str(playTime) + " min")
+# 	print (getUserTags(gameId), getGameName(gameId))
+# 	time5 = time.time()
+# 	print ("\t AchievementTime: ", time4-time3, "s")
+# 	print ("\t Steamstore Time: ", time5-time4, "s")
