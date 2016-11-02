@@ -8,6 +8,12 @@ import config
 
 key = config.key
 
+def inArray(attribute, array):
+	if attribute in array:
+		return array[attribute]
+	else:
+		return ""
+
 # kann bis zu 100 Summaries gleichzeitig abgreifen
 # dictionary mit den IDS als Key und value nen dictionary mit name visibility etc
 def getPlayerSummary(steamIdList):
@@ -19,18 +25,13 @@ def getPlayerSummary(steamIdList):
 	playerList = data["response"]["players"]
 	for player in playerList:
 		personalDict = {}
-		if "realname" in player:
-			personalDict["realname"] = player["realname"]
-		personalDict["visibility"] = player["communityvisibilitystate"]
-		personalDict["timecreated"] = player["timecreated"]
-		if "loccityid" in player:
-			personalDict["loccityid"] = player["loccityid"]
-		if "locstatecode" in player:
-			personalDict["locstatecode"] = player["locstatecode"]
-		if "loccountrycode" in player:
-			personalDict["loccountrycode"] = player["loccountrycode"]
-		if "locstatecode" in player:
-			personalDict["locstatecode"] = player["locstatecode"]
+		personalDict["realname"] = inArray("realname", player)
+		personalDict["visibility"] = inArray("communityvisibilitystate", player)
+		personalDict["timecreated"] = inArray("timecreated", player)
+		personalDict["loccityid"] = inArray("loccityid", player)
+		personalDict["locstatecode"] = inArray("locstatecode", player)
+		personalDict["loccountrycode"] = inArray("loccountrycode", player)
+		personalDict["locstatecode"] = inArray("locstatecode", player)
 
 		playerDict[player["steamid"]] = personalDict
 
