@@ -3,11 +3,12 @@ try:
 except ImportError:
     import urllib2
 
-import json, re
+import json, re, sys
 import config
 import pymysql
 from datetime import datetime
 from random import choice
+from math import ceil
 
 key = config.key
 
@@ -22,7 +23,7 @@ def inArray(attribute, array):
 # returns: dictionary with ids as a key and with dictionary in value field for all necessary information
 def getPlayerSummary(steamIdList):
 	playerDict = {}
-	for i in range(len(steamIdList)/100):
+	for i in range(int(ceil(float(len(steamIdList))/100.0))):
 		partialList = steamIdList[i*100:(i+1)*100]
 		commaSeparatedList = ','.join(str(x) for x in partialList)
 		f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key="+ str(key)+"&steamids="+ commaSeparatedList)
@@ -135,21 +136,28 @@ def getUserListFromDB(cursor):
 
 def addFriendsToUser(userId, friends, cursor):
 	print "\tAdd friends to User in database"
+	friendCounter = 0
 	for friend in friends:
+		progressBar(float(100*friendCounter/len(friends)))
 		friendId, relationship, friendsSince = str(friend), str(friends[friend]["relationship"]), str(friends[friend]["friendsSince"])
 		try:
 			cursor.execute("INSERT INTO `user_friends` (`steamid`,`friendsteamid`,`relationship`,`friendsSince`) VALUES ('"+userId+"', '"+ friendId +"', '"+ relationship +"', '"+ friendsSince +"');")
 		except pymysql.err.IntegrityError:
 			# if we override something
 			pass
+		friendCounter+=1
+	progressBar(100)
 	return 1
 
 def addUserSummarys(userList, cursor):
+	summaryCounter = 0
 	print "\tAdd User Summaries (" + str(len(userList)) + ")" 
 	now = datetime.now()
 	playerSummaries = getPlayerSummary(userList)
-	print "\tLoaded Player Summaries - Start upload to database"
+	print "\tLoaded Player Summaries ("+str(len(playerSummaries))+")"
+	print "\tStart upload to database"
 	for summary in playerSummaries:
+		progressBar(float(100*summaryCounter/len(playerSummaries)))
 		curSum = playerSummaries[summary]
 		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), removeNonAscii(curSum["realname"].replace("'","")), str(curSum["timecreated"])
 		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
@@ -159,7 +167,13 @@ def addUserSummarys(userList, cursor):
 		except pymysql.err.IntegrityError:
 			# if we override something
 			pass
+		summaryCounter += 1
+	progressBar(100)
 	return 1
+
+def progressBar(progress):
+	sys.stdout.write("\r%d%%" % progress)
+	sys.stdout.flush()
 
 # actionCounter counts calls to steam API
 def crawlUserIDsViaFriends(cursor, limitCounter=10000):
@@ -193,8 +207,10 @@ cursor = connection.cursor()
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
-#cursor.execute("SELECT * FROM user_friends")
-#print(len(cursor.fetchall()))
+#cursor.execute("SELECT visibility, COUNT(*) FROM user group by visibility")
+#myDict = (cursor.fetchall())
+#for i in myDict:
+#	print i
 crawlUserIDsViaFriends(cursor, 100)
 #print getUserListFromDB(cursor)
 
