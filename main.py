@@ -147,9 +147,10 @@ def addUserSummarys(userList, cursor):
 	playerSummaries = getPlayerSummary(userList)
 	for summary in playerSummaries:
 		curSum = playerSummaries[summary]
-		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), removeNonAscii(curSum["realname"]), str(curSum["timecreated"])
+		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), removeNonAscii(curSum["realname"].replace("'","")), str(curSum["timecreated"])
 		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
 		currentTime = now.strftime("%Y-%m-%d %H:%M")
+		print "Execute query", "INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`cityid`,`lastUpdated` ) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"', '"+currentTime+"');"
 		try:
 			cursor.execute("INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`cityid`,`lastUpdated` ) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"', '"+currentTime+"');")
 		except pymysql.err.IntegrityError:
@@ -157,9 +158,7 @@ def addUserSummarys(userList, cursor):
 			pass
 	return 1
 
-
-
-# TODO
+# actionCounter counts calls to steam API
 def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 	actionCounter = 0
 	userList = getUserListFromDB(cursor)
@@ -184,7 +183,7 @@ def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 		# 3. add them to friendslist
 		addFriendsToUser(currentUser, cursor)
 		actionCounter += 1
-		# 4. take random friend as starting point, if no friend findable take random
+		# 4. take random friend as starting point, if no friend findable take random user
 		if len(userFriends.keys()) > 1:
 			currentUser = choice(userFriends.keys())	
 		else:
