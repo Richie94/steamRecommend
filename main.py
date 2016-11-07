@@ -6,6 +6,8 @@ except ImportError:
 import json, re
 import config
 import pymysql
+from datetime import datetime
+from random import choice
 
 key = config.key
 
@@ -123,42 +125,83 @@ def getGameName(gameId):
 	else:
 		return "-- Not found --"
 
-#TODO
-def getUserListFromDB():
-	connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True)
-	cursor = connection.cursor()
-	test = cursor.execute("SELECT steamid FROM user_friends")
-	print(cursor.fetchall())
+def getUserListFromDB(cursor):
+	cursor.execute("SELECT steamid FROM user")
+	userList = cursor.fetchall()
+	return [user["steamid"] for user in userList]
 
-	cursor.close()
-	connection.close()
 
-# TODO
-def crawlUserIDsViaFriends(startSteamId, cursor, limitCounter=10000):
-	friends = getFriends(startSteamId)
-	chosenId = startSteamId
-
-	#1. Add user to user DB (because of constraint in user_friends)
-	playerSummaries = getPlayerSummary([str(friend) for friend in friends])
-	for summary in playerSummaries:
-		curSum = playerSummaries[summary]
-		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), curSum["realname"], str(curSum["timecreated"])
-		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
-		cursor.execute("INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`loccityid`) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"');")
-		
-	#2. Add friends to user_friends
+def addFriendsToUser(userId, cursor):
+	friends = getFriends(userId)
 	for friend in friends:
 		friendId, relationship, friendsSince = str(friend), str(friends[friend]["relationship"]), str(friends[friend]["friendsSince"])
-		cursor.execute("INSERT INTO `user_friends` (`steamid`,`friendsteamid`,`relationship`,`friendsSince`) VALUES ('"+ str(chosenId) +"', '"+ friendId +"', '"+ relationship +"', '"+ friendsSince +"'g);")
+		try:
+			cursor.execute("INSERT INTO `user_friends` (`steamid`,`friendsteamid`,`relationship`,`friendsSince`) VALUES ('"+userId+"', '"+ friendId +"', '"+ relationship +"', '"+ friendsSince +"');")
+		except pymysql.err.IntegrityError:
+			# if we override something
+			pass
+	return 1
 
-connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True)
+def addUserSummarys(userList, cursor):
+	now = datetime.now()
+	playerSummaries = getPlayerSummary(userList)
+	for summary in playerSummaries:
+		curSum = playerSummaries[summary]
+		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), removeNonAscii(curSum["realname"]), str(curSum["timecreated"])
+		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
+		currentTime = now.strftime("%Y-%m-%d %H:%M")
+		try:
+			cursor.execute("INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`cityid`,`lastUpdated` ) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"', '"+currentTime+"');")
+		except pymysql.err.IntegrityError:
+			# if we override something
+			pass
+	return 1
+
+
+
+# TODO
+def crawlUserIDsViaFriends(cursor, limitCounter=10000):
+	actionCounter = 0
+	userList = getUserListFromDB(cursor)
+	#start with random user
+	currentUser = choice(userList)
+	while actionCounter < limitCounter:
+		print("Action: " + str(actionCounter) + " - CurrentUser: " + str(currentUser))
+		# 1. get Friends from User (1x call)
+		userFriends = getFriends(currentUser)
+		actionCounter += 1
+		# 2. add their summarys (max 100 summarys per call)
+		if len(userFriends) > 100:
+			# copy userFriends to temporar list which we can work down
+			tempUserFriends = userFriends.keys()
+			while len(tempUserFriends) > 100:
+				addUserSummarys(tempUserFriends[:100], cursor)
+				tempUserFriends = tempUserFriends[100:]
+				actionCounter += 1
+		else:
+			addUserSummarys(userFriends, cursor)
+			actionCounter += 1
+		# 3. add them to friendslist
+		addFriendsToUser(currentUser, cursor)
+		actionCounter += 1
+		# 4. take random friend as starting point, if no friend findable take random
+		if len(userFriends.keys()) > 1:
+			currentUser = choice(userFriends.keys())	
+		else:
+			currentUser = choice(getUserListFromDB(cursor))
+
+
+
+connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
 cursor = connection.cursor()
 
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
-crawlUserIDsViaFriends(myList[0], cursor)
-#print getUserListFromDB()
+#cursor.execute("SELECT * FROM user WHERE steamid like '%348'")
+#print(cursor.fetchall())
+crawlUserIDsViaFriends(cursor, 100)
+#print getUserListFromDB(cursor)
 
 
 #ownedGames = getOwnedGames(myList[3])
