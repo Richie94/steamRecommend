@@ -22,19 +22,21 @@ def inArray(attribute, array):
 # returns: dictionary with ids as a key and with dictionary in value field for all necessary information
 def getPlayerSummary(steamIdList):
 	playerDict = {}
-	commaSeparatedList = ','.join(str(x) for x in steamIdList)
-	f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key="+ str(key)+"&steamids="+ commaSeparatedList)
-	data = json.load(f)
-	playerList = data["response"]["players"]
-	for player in playerList:
-		personalDict = {}
-		personalDict["realname"] = inArray("realname", player)
-		personalDict["visibility"] = inArray("communityvisibilitystate", player)
-		personalDict["timecreated"] = inArray("timecreated", player)
-		personalDict["loccityid"] = inArray("loccityid", player)
-		personalDict["locstatecode"] = inArray("locstatecode", player)
-		personalDict["loccountrycode"] = inArray("loccountrycode", player)
-		playerDict[player["steamid"]] = personalDict
+	for i in range(len(steamIdList)/100):
+		partialList = steamIdList[i*100:(i+1)*100]
+		commaSeparatedList = ','.join(str(x) for x in partialList)
+		f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key="+ str(key)+"&steamids="+ commaSeparatedList)
+		data = json.load(f)
+		playerList = data["response"]["players"]
+		for player in playerList:
+			personalDict = {}
+			personalDict["realname"] = inArray("realname", player)
+			personalDict["visibility"] = inArray("communityvisibilitystate", player)
+			personalDict["timecreated"] = inArray("timecreated", player)
+			personalDict["loccityid"] = inArray("loccityid", player)
+			personalDict["locstatecode"] = inArray("locstatecode", player)
+			personalDict["loccountrycode"] = inArray("loccountrycode", player)
+			playerDict[player["steamid"]] = personalDict
 	return playerDict
 
 def removeNonAscii(s): 
@@ -132,6 +134,7 @@ def getUserListFromDB(cursor):
 
 
 def addFriendsToUser(userId, friends, cursor):
+	print "\tAdd friends to User in database"
 	for friend in friends:
 		friendId, relationship, friendsSince = str(friend), str(friends[friend]["relationship"]), str(friends[friend]["friendsSince"])
 		try:
@@ -142,8 +145,10 @@ def addFriendsToUser(userId, friends, cursor):
 	return 1
 
 def addUserSummarys(userList, cursor):
+	print "\tAdd User Summaries (" + str(len(userList)) + ")" 
 	now = datetime.now()
 	playerSummaries = getPlayerSummary(userList)
+	print "\tLoaded Player Summaries - Start upload to database"
 	for summary in playerSummaries:
 		curSum = playerSummaries[summary]
 		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), removeNonAscii(curSum["realname"].replace("'","")), str(curSum["timecreated"])
@@ -166,25 +171,17 @@ def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 		print("Action: " + str(actionCounter) + " - CurrentUser: " + str(currentUser))
 		# 1. get Friends from User (1x call)
 		userFriends = getFriends(currentUser)
+		print "\tLoaded friendlist"
+		friendList = [str(user) for user in userFriends]
 		actionCounter += 1
 		# 2. add their summarys (max 100 summarys per call)
-		if len(userFriends) > 100:
-			# copy userFriends to temporar list which we can work down
-			tempUserFriends = userFriends.keys()
-			while len(tempUserFriends) > 100:
-				addUserSummarys(tempUserFriends[:100], cursor)
-				tempUserFriends = tempUserFriends[100:]
-				actionCounter += 1
-			addUserSummarys(tempUserFriends, cursor)
-			actionCounter += 1
-		else:
-			addUserSummarys(userFriends, cursor)
-			actionCounter += 1
+		addUserSummarys(friendList, cursor)
+		actionCounter += 1
 		# 3. add them to friendslist
 		addFriendsToUser(currentUser, userFriends, cursor)
 		# 4. take random friend as starting point, if no friend findable take random user
 		if len(userFriends.keys()) > 1:
-			currentUser = choice(userFriends.keys())	
+			currentUser = choice(friendList)	
 		else:
 			currentUser = choice(getUserListFromDB(cursor))
 
