@@ -131,8 +131,7 @@ def getUserListFromDB(cursor):
 	return [user["steamid"] for user in userList]
 
 
-def addFriendsToUser(userId, cursor):
-	friends = getFriends(userId)
+def addFriendsToUser(userId, friends, cursor):
 	for friend in friends:
 		friendId, relationship, friendsSince = str(friend), str(friends[friend]["relationship"]), str(friends[friend]["friendsSince"])
 		try:
@@ -150,7 +149,6 @@ def addUserSummarys(userList, cursor):
 		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), removeNonAscii(curSum["realname"].replace("'","")), str(curSum["timecreated"])
 		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
 		currentTime = now.strftime("%Y-%m-%d %H:%M")
-		print "Execute query", "INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`cityid`,`lastUpdated` ) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"', '"+currentTime+"');"
 		try:
 			cursor.execute("INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`cityid`,`lastUpdated` ) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"', '"+currentTime+"');")
 		except pymysql.err.IntegrityError:
@@ -177,12 +175,13 @@ def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 				addUserSummarys(tempUserFriends[:100], cursor)
 				tempUserFriends = tempUserFriends[100:]
 				actionCounter += 1
+			addUserSummarys(tempUserFriends, cursor)
+			actionCounter += 1
 		else:
 			addUserSummarys(userFriends, cursor)
 			actionCounter += 1
 		# 3. add them to friendslist
-		addFriendsToUser(currentUser, cursor)
-		actionCounter += 1
+		addFriendsToUser(currentUser, userFriends, cursor)
 		# 4. take random friend as starting point, if no friend findable take random user
 		if len(userFriends.keys()) > 1:
 			currentUser = choice(userFriends.keys())	
@@ -197,8 +196,8 @@ cursor = connection.cursor()
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
-#cursor.execute("SELECT * FROM user WHERE steamid like '%348'")
-#print(cursor.fetchall())
+#cursor.execute("SELECT * FROM user_friends")
+#print(len(cursor.fetchall()))
 crawlUserIDsViaFriends(cursor, 100)
 #print getUserListFromDB(cursor)
 
