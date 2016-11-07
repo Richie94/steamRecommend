@@ -9,14 +9,15 @@ import pymysql
 
 key = config.key
 
+#checks if attribute is in array and returns it, else return empty string
 def inArray(attribute, array):
 	if attribute in array:
 		return array[attribute]
 	else:
 		return ""
 
-# kann bis zu 100 Summaries gleichzeitig abgreifen
-# rueckgabe: dictionary mit den IDS als Key und value nen dictionary mit name visibility etc
+# Up to 100 summarys in parallel
+# returns: dictionary with ids as a key and with dictionary in value field for all necessary information
 def getPlayerSummary(steamIdList):
 	playerDict = {}
 	commaSeparatedList = ','.join(str(x) for x in steamIdList)
@@ -160,7 +161,7 @@ crawlUserIDsViaFriends(myList[0], cursor)
 #print getUserListFromDB()
 
 
-ownedGames = getOwnedGames(myList[3])
+#ownedGames = getOwnedGames(myList[3])
 
 # counter = 0
 # print (len(ownedGames))
