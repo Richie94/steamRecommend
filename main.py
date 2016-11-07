@@ -5,6 +5,7 @@ except ImportError:
 
 import json, re
 import config
+import pymysql
 
 key = config.key
 
@@ -15,12 +16,11 @@ def inArray(attribute, array):
 		return ""
 
 # kann bis zu 100 Summaries gleichzeitig abgreifen
-# dictionary mit den IDS als Key und value nen dictionary mit name visibility etc
+# rueckgabe: dictionary mit den IDS als Key und value nen dictionary mit name visibility etc
 def getPlayerSummary(steamIdList):
 	playerDict = {}
 	commaSeparatedList = ','.join(str(x) for x in steamIdList)
 	f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key="+ str(key)+"&steamids="+ commaSeparatedList)
-
 	data = json.load(f)
 	playerList = data["response"]["players"]
 	for player in playerList:
@@ -31,38 +31,40 @@ def getPlayerSummary(steamIdList):
 		personalDict["loccityid"] = inArray("loccityid", player)
 		personalDict["locstatecode"] = inArray("locstatecode", player)
 		personalDict["loccountrycode"] = inArray("loccountrycode", player)
-		personalDict["locstatecode"] = inArray("locstatecode", player)
-
 		playerDict[player["steamid"]] = personalDict
-
 	return playerDict
 
 def removeNonAscii(s): 
 	return "".join(i for i in s if ord(i)<128)
 
 def getFriends(steamId):
-	friends = []
+	friendDict = {}
 	try:
 		f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key="+ str(key)+"&steamid="+ str(steamId) +"&relationship=friend")
 		data = json.load(f)
 		friendsList = data["friendslist"]["friends"]
 		for friend in friendsList:
-			friends.append(str(friend["steamid"]))
-	except:
-		print("Private SteamId: ", steamId)
+			if "steamid" in friend:
+				personalDict = {}
+				personalDict["relationship"] = friend["relationship"]
+				personalDict["friendsSince"] = friend["friend_since"]
+				friendDict[friend["steamid"]] = personalDict
+	except urllib2.HTTPError:
+		#Private profiles possible
 		pass
-	return friends
+	return friendDict
 
 def getPlayerAchievements(steamId, gameId):
 	achievements = {}
 	try:
 		f = urllib2.urlopen("http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid="+ str(gameId) +"&key="+ str(key) +"&steamid=" + str(steamId))
 		data = json.load(f)
-		allAchievements = data["playerstats"]["achievements"]
-		print (data["playerstats"]["gameName"])
+		allAchievements = inArray("achievements", data["playerstats"])
+		#print (data["playerstats"]["gameName"])
 		for achievement in allAchievements:
 			achievements[str(achievement["apiname"])] = achievement["achieved"]
-	except:
+	except urllib2.HTTPError:
+		# Not every time stats available
 		pass
 	return achievements
 
@@ -120,33 +122,55 @@ def getGameName(gameId):
 	else:
 		return "-- Not found --"
 
+#TODO
+def getUserListFromDB():
+	connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True)
+	cursor = connection.cursor()
+	test = cursor.execute("SELECT steamid FROM user_friends")
+	print(cursor.fetchall())
 
+	cursor.close()
+	connection.close()
 
-# DB Played : UserID, GameID, AchievementSumme, Spieldauer
-# CREATE TABLE played ( userId int, gameId int, achievementSum int, playTime int);
-# DB Games  : GameID, GameTags, GlobalAchievementSumme
-# CREATE TABLE games ( gameId int, gameTags varchar(255), globalAchievementSum int);
-# DB Friends: UserID, UserID
-# CREATE TABLE friends ( userId1 int, userId2 int);
+# TODO
+def crawlUserIDsViaFriends(startSteamId, cursor, limitCounter=10000):
+	friends = getFriends(startSteamId)
+	chosenId = startSteamId
+
+	#1. Add user to user DB (because of constraint in user_friends)
+	playerSummaries = getPlayerSummary([str(friend) for friend in friends])
+	for summary in playerSummaries:
+		curSum = playerSummaries[summary]
+		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), curSum["realname"], str(curSum["timecreated"])
+		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
+		cursor.execute("INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`loccityid`) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"');")
+		
+	#2. Add friends to user_friends
+	for friend in friends:
+		friendId, relationship, friendsSince = str(friend), str(friends[friend]["relationship"]), str(friends[friend]["friendsSince"])
+		cursor.execute("INSERT INTO `user_friends` (`steamid`,`friendsteamid`,`relationship`,`friendsSince`) VALUES ('"+ str(chosenId) +"', '"+ friendId +"', '"+ relationship +"', '"+ friendsSince +"'g);")
+
+connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True)
+cursor = connection.cursor()
 
 # Ulrich, meine, svens, Luux
-import time
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
-print getPlayerSummary(myList)
-# ownedGames = getOwnedGames(myList[3])
+crawlUserIDsViaFriends(myList[0], cursor)
+#print getUserListFromDB()
+
+
+ownedGames = getOwnedGames(myList[3])
 
 # counter = 0
 # print (len(ownedGames))
-# for game in ownedGames:
-# 	gameId = game[0]
-# 	playTime = game[1]
-# 	time3 = time.time()
-# 	globalAchievements = getGlobalAchievementsPercentage(gameId)
-# 	playerAchievements = getPlayerAchievements(myList[0], gameId)
-# 	time4 = time.time()
-# 	print (achievementScore(globalAchievements, playerAchievements), gameId, str(playTime) + " min")
-# 	print (getUserTags(gameId), getGameName(gameId))
-# 	time5 = time.time()
-# 	print ("\t AchievementTime: ", time4-time3, "s")
-# 	print ("\t Steamstore Time: ", time5-time4, "s")
+#for game in ownedGames:
+ 	#gameId = game[0]
+ 	#playTime = game[1]
+	#globalAchievements = getGlobalAchievementsPercentage(gameId)
+	#print(myList[0], gameId)
+ 	#playerAchievements = getPlayerAchievements(myList[0], gameId)
+	#print (achievementScore(globalAchievements, playerAchievements), gameId, str(playTime) + " min")
+	#print (getUserTags(gameId), getGameName(gameId))
+cursor.close()
+connection.close()
