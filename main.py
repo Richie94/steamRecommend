@@ -135,40 +135,39 @@ def getUserListFromDB(cursor):
 
 
 def addFriendsToUser(userId, friends, cursor):
-	print "\tAdd friends to User in database"
-	friendCounter = 0
+	print "\tAdd friends to User in database", 
+	query = "INSERT INTO `user_friends` (`steamid`,`friendsteamid`,`relationship`,`friendsSince`) VALUES (%s,%s,%s,%s)"
+	queryData = []
 	for friend in friends:
-		progressBar(float(100*friendCounter/len(friends)))
 		friendId, relationship, friendsSince = str(friend), str(friends[friend]["relationship"]), str(friends[friend]["friendsSince"])
-		try:
-			cursor.execute("INSERT INTO `user_friends` (`steamid`,`friendsteamid`,`relationship`,`friendsSince`) VALUES ('"+userId+"', '"+ friendId +"', '"+ relationship +"', '"+ friendsSince +"');")
-		except pymysql.err.IntegrityError:
-			# if we override something
-			pass
-		friendCounter+=1
-	progressBar(100)
+		queryData.append((userId, friendId, relationship, friendsSince))
+	try:
+		cursor.executemany(query, queryData)
+	except pymysql.err.IntegrityError:
+		# if we override something
+		pass
+	print "- Done"
 	return 1
 
 def addUserSummarys(userList, cursor):
-	summaryCounter = 0
 	print "\tAdd User Summaries (" + str(len(userList)) + ")" 
 	now = datetime.now()
 	playerSummaries = getPlayerSummary(userList)
-	print "\tLoaded Player Summaries ("+str(len(playerSummaries))+")"
-	print "\tStart upload to database"
+	print "\tLoaded Player Summaries ("+str(len(playerSummaries))+"), Start Upload to DB",
+	query = "INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`cityid`,`lastUpdated` ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+	queryData = []
 	for summary in playerSummaries:
-		progressBar(float(100*summaryCounter/len(playerSummaries)))
 		curSum = playerSummaries[summary]
-		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), removeNonAscii(curSum["realname"].replace("'","")), str(curSum["timecreated"])
+		steamid, visibility, realname, timecreated = str(summary), str(curSum["visibility"]), str(removeNonAscii(curSum["realname"].replace("'",""))), str(curSum["timecreated"])
 		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
 		currentTime = now.strftime("%Y-%m-%d %H:%M")
-		try:
-			cursor.execute("INSERT INTO `user`(`steamid`,`visibility`,`realname`,`timecreated`,`loccountrycode`,`locstatecode`,`cityid`,`lastUpdated` ) VALUES ('"+steamid+"', '"+visibility+"', '"+realname+"', '"+timecreated+"', '"+loccountrycode+"', '"+locstatecode+"', '"+loccityid+"', '"+currentTime+"');")
-		except pymysql.err.IntegrityError:
-			# if we override something
-			pass
-		summaryCounter += 1
-	progressBar(100)
+		queryData.append((steamid,visibility,realname,timecreated,loccountrycode,locstatecode,loccityid,currentTime))
+	try:
+		cursor.executemany(query, queryData)
+	except pymysql.err.IntegrityError:
+		# if we override something
+		pass
+	print "- Done"
 	return 1
 
 def progressBar(progress):
@@ -207,7 +206,8 @@ cursor = connection.cursor()
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
-#cursor.execute("SELECT visibility, COUNT(*) FROM user group by visibility")
+#addUserSummarys(myList, cursor)
+#cursor.execute("SELECT loccountrycode, COUNT(*) FROM user group by loccountrycode")
 #myDict = (cursor.fetchall())
 #for i in myDict:
 #	print i
