@@ -13,11 +13,14 @@ from math import ceil
 key = config.key
 
 #checks if attribute is in array and returns it, else return empty string
-def inArray(attribute, array):
+def inArray(attribute, array, ourType="str"):
 	if attribute in array:
 		return array[attribute]
 	else:
-		return ""
+		if ourType == "int":
+			return 0
+		else:
+			return ""
 
 # Up to 100 summarys in parallel
 # returns: dictionary with ids as a key and with dictionary in value field for all necessary information
@@ -33,8 +36,8 @@ def getPlayerSummary(steamIdList):
 			personalDict = {}
 			personalDict["realname"] = inArray("realname", player)
 			personalDict["visibility"] = inArray("communityvisibilitystate", player)
-			personalDict["timecreated"] = inArray("timecreated", player)
-			personalDict["loccityid"] = inArray("loccityid", player)
+			personalDict["timecreated"] = inArray("timecreated", player, "int")
+			personalDict["loccityid"] = inArray("loccityid", player, "int")
 			personalDict["locstatecode"] = inArray("locstatecode", player)
 			personalDict["loccountrycode"] = inArray("loccountrycode", player)
 			playerDict[player["steamid"]] = personalDict
@@ -146,7 +149,7 @@ def addFriendsToUser(userId, friends, cursor):
 	except pymysql.err.IntegrityError:
 		# if we override something
 		pass
-	print "- Done"
+	print "("+str(len(queryData)) + ") - Done"
 	return 1
 
 def addUserSummarys(userList, cursor):
@@ -167,7 +170,7 @@ def addUserSummarys(userList, cursor):
 	except pymysql.err.IntegrityError:
 		# if we override something
 		pass
-	print "- Done"
+	print "("+str(len(queryData)) + ") - Done"
 	return 1
 
 def progressBar(progress):
