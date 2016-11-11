@@ -12,6 +12,10 @@ from math import ceil
 
 key = config.key
 
+def progressBar(progress):
+	sys.stdout.write("\r%d%%" % progress)
+	sys.stdout.flush()
+
 #checks if attribute is in array and returns it, else return empty string
 def inArray(attribute, array, ourType="str"):
 	if attribute in array:
@@ -83,7 +87,10 @@ def getOwnedGames(steamId):
 	data = json.load(f)
 	gameList = data["response"]["games"]
 	for game in gameList:
-		games.append((game["appid"], game["playtime_forever"]))
+		gameId = inArray("appid", game)
+		playtimeForever = inArray("playtime_forever", game)
+		playtime2Weeks = inArray("playtime_2weeks", game, "int")
+		games.append((gameId, playtimeForever, playtime2Weeks))
 	return games
 
 def getGlobalAchievementsPercentage(gameId):
@@ -132,10 +139,40 @@ def getGameName(gameId):
 		return "-- Not found --"
 
 def getUserListFromDB(cursor):
-	cursor.execute("SELECT steamid FROM user")
+	cursor.execute("SELECT steamid FROM user;")
 	userList = cursor.fetchall()
 	return [user["steamid"] for user in userList]
 
+def getUsersWithoutGamesFromDB(limit):
+	cursor.execute("SELECT steamid FROM user where gameListLoaded = 0 and visibility = 3;")
+	userList = cursor.fetchall()[:limit]
+	return [user["steamid"] for user in userList]
+
+#
+# Skip Achievement score so far, first collect user games, 
+# then fill gamelist with gobal stats and then later compute achievementscore
+#
+def addUserGames(userList,cursor):
+	actionCounter = 0
+	for user in userList:
+		print("Add games to user "+ str(user))
+		query = "INSERT INTO `user_games` (`steamid`,`gameid`,`timetwoweeks`,`timeforever`) VALUES (%s,%s,%s,%s)"
+		queryData = []
+		gameList = getOwnedGames(user)
+		actionCounter += 1
+		for game in gameList:
+			gameId = game[0]
+			playtimeForever = game[1]
+			playtime2Weeks = game[2]
+			queryData.append((user, gameId, playtime2Weeks, playtimeForever))
+		try:
+			cursor.executemany(query, queryData)
+		except pymysql.err.IntegrityError:
+			# if we override something
+			pass
+		# set gameListLoaded Flag
+		cursor.execute("UPDATE user SET gameListLoaded = 1 where steamid='"+user+"';")
+	return actionCounter
 
 def addFriendsToUser(userId, friends, cursor):
 	print "\tAdd friends to User in database", 
@@ -173,10 +210,6 @@ def addUserSummarys(userList, cursor):
 	print "("+str(len(queryData)) + ") - Done"
 	return 1
 
-def progressBar(progress):
-	sys.stdout.write("\r%d%%" % progress)
-	sys.stdout.flush()
-
 # actionCounter counts calls to steam API
 def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 	actionCounter = 0
@@ -209,12 +242,18 @@ cursor = connection.cursor()
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
-#addUserSummarys(myList, cursor)
-#cursor.execute("SELECT loccountrycode, COUNT(*) FROM user group by loccountrycode")
-#myDict = (cursor.fetchall())
-#for i in myDict:
-#	print i
-crawlUserIDsViaFriends(cursor, 100)
+usersWithoutGames = getUsersWithoutGamesFromDB(10)
+addUserGames(usersWithoutGames, cursor)
+
+# cursor.execute("SELECT loccountrycode, COUNT(*) FROM user group by loccountrycode")
+# myDict = (cursor.fetchall())
+# for i in myDict:
+# 	print i
+# cursor.execute("SELECT visibility, COUNT(*) FROM user group by visibility")
+# myDict = (cursor.fetchall())
+# for i in myDict:
+# 	print i
+#crawlUserIDsViaFriends(cursor, 1000)
 #print getUserListFromDB(cursor)
 
 
