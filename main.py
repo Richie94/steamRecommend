@@ -55,7 +55,7 @@ def getFriends(steamId):
 	try:
 		f = urllib2.urlopen("http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key="+ str(key)+"&steamid="+ str(steamId) +"&relationship=friend")
 		data = json.load(f)
-		friendsList = data["friendslist"]["friends"]
+		friendsList = inArray("friends",inArray("friendslist", data))
 		for friend in friendsList:
 			if "steamid" in friend:
 				personalDict = {}
@@ -85,7 +85,7 @@ def getOwnedGames(steamId):
 	games = []
 	f = urllib2.urlopen("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key="+ str(key) +"&steamid=" + str(steamId) + "&format=json")
 	data = json.load(f)
-	gameList = data["response"]["games"]
+	gameList = inArray("games",inArray("response", data))
 	for game in gameList:
 		gameId = inArray("appid", game)
 		playtimeForever = inArray("playtime_forever", game)
@@ -242,14 +242,22 @@ cursor = connection.cursor()
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
-usersWithoutGames = getUsersWithoutGamesFromDB(10)
-addUserGames(usersWithoutGames, cursor)
+limit = 10000
+actionCounter = 0
+while actionCounter < limit:
+	try:
+		usersWithoutGames = getUsersWithoutGamesFromDB(500)
+		actionCounter += addUserGames(usersWithoutGames, cursor)
+		print("ActionCounter: " + str(actionCounter))
+	except urllib2.HTTPError:
+		print("HTTP Error")
+		pass
 
 # cursor.execute("SELECT loccountrycode, COUNT(*) FROM user group by loccountrycode")
 # myDict = (cursor.fetchall())
 # for i in myDict:
 # 	print i
-# cursor.execute("SELECT visibility, COUNT(*) FROM user group by visibility")
+# cursor.execute("SELECT gameListLoaded, COUNT(*) FROM user group by gameListLoaded")
 # myDict = (cursor.fetchall())
 # for i in myDict:
 # 	print i
