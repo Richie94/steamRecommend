@@ -9,6 +9,7 @@ import pymysql
 from datetime import datetime
 from random import choice
 from math import ceil
+import requests
 
 key = config.key
 
@@ -121,13 +122,22 @@ def getUrl(url):
 		return ""
 
 def getUserTags(gameId):
-	tags = []
-	output = getUrl("http://store.steampowered.com/app/"+str(gameId)).read()
-	p = re.compile('<a href="http://store.steampowered.com/tag/.*?\n.*?\n')
-	m = p.findall(output)
-	for tag in m:
-		tags.append(removeNonAscii(tag.split("\n")[1].replace("\t", "").split("<")[0]))
-	return tags 
+  tags = []
+  #opener = urllib2.build_opener()
+  #opener.addheaders.append(('Cookie', 'birthtime = 568022401'))
+  #output = opener.open("http://store.steampowered.com/app/"+str(gameId)).read()
+  
+  cookies = {'birthtime': '568022401'}
+  output = requests.get("http://store.steampowered.com/app/"+str(gameId), cookies=cookies).content
+  #output = getUrl("http://store.steampowered.com/app/"+str(gameId)).read()
+  print output
+  p = re.compile('<a href="http://store.steampowered.com/tag/.*?\n.*?\n')
+ 
+  m = p.findall(output)
+  for tag in m:
+   tags.append(removeNonAscii(tag.split("\n")[1].replace("\t", "").split("<")[0]))
+  print tags
+  return tags 
 
 def getGameName(gameId):
 	output = getUrl("http://store.steampowered.com/app/"+str(gameId)).read()
@@ -256,18 +266,19 @@ cursor = connection.cursor()
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
 
-print(getAllApps())
+#print(getAllApps())
+print(getUserTags(49520))
 
 limit = 10000
 actionCounter = 0
-while actionCounter < limit:
-	try:
-		usersWithoutGames = getUsersWithoutGamesFromDB(500)
-		actionCounter += addUserGames(usersWithoutGames, cursor)
-		print("ActionCounter: " + str(actionCounter))
-	except urllib2.HTTPError:
-		print("HTTP Error")
-		pass
+#while actionCounter < limit:
+#	try:
+#		usersWithoutGames = getUsersWithoutGamesFromDB(500)
+#		actionCounter += addUserGames(usersWithoutGames, cursor)
+#		print("ActionCounter: " + str(actionCounter))
+#	except urllib2.HTTPError:
+#		print("HTTP Error")
+#		pass
     
 
 
