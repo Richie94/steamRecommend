@@ -122,22 +122,14 @@ def getUrl(url):
 		return ""
 
 def getUserTags(gameId):
-  tags = []
-  #opener = urllib2.build_opener()
-  #opener.addheaders.append(('Cookie', 'birthtime = 568022401'))
-  #output = opener.open("http://store.steampowered.com/app/"+str(gameId)).read()
-  
-  cookies = {'birthtime': '568022401'}
-  output = requests.get("http://store.steampowered.com/app/"+str(gameId), cookies=cookies).content
-  #output = getUrl("http://store.steampowered.com/app/"+str(gameId)).read()
-  print output
-  p = re.compile('<a href="http://store.steampowered.com/tag/.*?\n.*?\n')
- 
-  m = p.findall(output)
-  for tag in m:
-   tags.append(removeNonAscii(tag.split("\n")[1].replace("\t", "").split("<")[0]))
-  print tags
-  return tags 
+	tags = []
+	cookies = {'birthtime': '568022401'}
+	output = requests.get("http://store.steampowered.com/app/"+str(gameId), cookies=cookies).content
+	p = re.compile('<a href="http://store.steampowered.com/tag/.*?</a>',re.DOTALL)
+	m = p.findall(output)
+	for tag in m:
+		tags.append(removeNonAscii(tag.split("\n")[1].replace("\t", "").split("<")[0]))
+	return tags 
 
 def getGameName(gameId):
 	output = getUrl("http://store.steampowered.com/app/"+str(gameId)).read()
@@ -160,15 +152,15 @@ def getUsersWithoutGamesFromDB(limit):
 
 
 def getAllApps():
- appDict = {}
- f = urllib2.urlopen("http://api.steampowered.com/ISteamApps/GetAppList/v0001/")
- data = json.load(f)
- appList = inArray("app",inArray("apps",inArray("applist", data)))
- for app in appList:
-  appid = inArray("appid", app)
-  name = inArray("name", app)
-  appDict[appid] = name
- return appDict
+	appDict = {}
+	f = urllib2.urlopen("http://api.steampowered.com/ISteamApps/GetAppList/v0001/")
+	data = json.load(f)
+	appList = inArray("app",inArray("apps",inArray("applist", data)))
+	for app in appList:
+		appid = inArray("appid", app)
+		name = inArray("name", app)
+		appDict[appid] = name
+	return appDict
 
 
 #
