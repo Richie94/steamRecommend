@@ -145,9 +145,9 @@ def getUserListFromDB(cursor):
 	userList = cursor.fetchall()
 	return [user["steamid"] for user in userList]
 
-def getUsersWithoutGamesFromDB(limit):
+def getUsersWithoutGamesFromDB(limit, offset=0):
 	cursor.execute("SELECT steamid FROM user where gameListLoaded = 0 and visibility = 3;")
-	userList = cursor.fetchall()[:limit]
+	userList = cursor.fetchall()[offset:offset+limit]
 	return [user["steamid"] for user in userList]
 
 
@@ -258,19 +258,16 @@ cursor = connection.cursor()
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
 
-#print(getAllApps())
-print(getUserTags(49520))
-
 limit = 10000
 actionCounter = 0
-#while actionCounter < limit:
-#	try:
-#		usersWithoutGames = getUsersWithoutGamesFromDB(500)
-#		actionCounter += addUserGames(usersWithoutGames, cursor)
-#		print("ActionCounter: " + str(actionCounter))
-#	except urllib2.HTTPError:
-#		print("HTTP Error")
-#		pass
+while actionCounter < limit:
+	try:
+		usersWithoutGames = getUsersWithoutGamesFromDB(500)
+		actionCounter += addUserGames(usersWithoutGames, cursor)
+		print("ActionCounter: " + str(actionCounter))
+	except urllib2.HTTPError:
+		print("HTTP Error")
+		pass
     
 
 
