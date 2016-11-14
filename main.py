@@ -148,6 +148,19 @@ def getUsersWithoutGamesFromDB(limit):
 	userList = cursor.fetchall()[:limit]
 	return [user["steamid"] for user in userList]
 
+
+def getAllApps():
+ appDict = {}
+ f = urllib2.urlopen("http://api.steampowered.com/ISteamApps/GetAppList/v0001/")
+ data = json.load(f)
+ appList = inArray("app",inArray("apps",inArray("applist", data)))
+ for app in appList:
+  appid = inArray("appid", app)
+  name = inArray("name", app)
+  appDict[appid] = name
+ return appDict
+
+
 #
 # Skip Achievement score so far, first collect user games, 
 # then fill gamelist with gobal stats and then later compute achievementscore
@@ -242,6 +255,9 @@ cursor = connection.cursor()
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 
+
+print(getAllApps())
+
 limit = 10000
 actionCounter = 0
 while actionCounter < limit:
@@ -252,6 +268,8 @@ while actionCounter < limit:
 	except urllib2.HTTPError:
 		print("HTTP Error")
 		pass
+    
+
 
 # cursor.execute("SELECT loccountrycode, COUNT(*) FROM user group by loccountrycode")
 # myDict = (cursor.fetchall())
