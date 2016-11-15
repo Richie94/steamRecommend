@@ -163,6 +163,56 @@ def getAllApps():
 	return appDict
 
 
+def getGamesInUserGames(cursor):
+	cursor.execute("SELECT DISTINCT gameid FROM user_games;")
+	gameList = cursor.fetchall()
+	return [game["gameid"] for game in gameList]
+
+def getGamesInGames(cursor):
+	cursor.execute("SELECT id FROM game;")
+	gameList = cursor.fetchall()
+	return [game["id"] for game in gameList]
+
+# without achievement sum so far
+def addGamesToDB(gameIdList, cursor):
+	actionCounter = 0
+	for gameId in gameIdList:
+		# 1: get tags
+		tags = []
+		cookies = {'birthtime': '568022401'}
+		output = requests.get("http://store.steampowered.com/app/"+str(gameId), cookies=cookies).content
+		p = re.compile('<a href="http://store.steampowered.com/tag/.*?</a>',re.DOTALL)
+		m = p.findall(output)
+		for tag in m:
+			tags.append(removeNonAscii(tag.split("\n")[1].replace("\t", "").split("<")[0]))
+		# 2: get name
+		p = re.compile('<div class="apphub_AppName">.*?</div>')
+		m = p.findall(output)
+		if m:
+			gameName = removeNonAscii(m[0].split('">')[1].split("</")[0])
+		else:
+			gameName = "-- Not found --"
+		joinedTags = ','.join(tags)
+		print joinedTags, gameName
+		try:
+			cursor.execute("INSERT INTO `game` (`id`,`name`,`gameTags`) VALUES (%s, %s, %s);", (str(gameId),gameName, joinedTags))
+		except pymysql.err.IntegrityError:
+			# if we override something
+			pass
+		actionCounter += 1
+		print("Inserted "+ str(gameId) + " - " + gameName + " : " + joinedTags)
+	return actionCounter
+
+def addMissingGames(cursor):
+	gamesInDB = getGamesInGames(cursor)
+	gamesInUserGames = getGamesInUserGames(cursor)
+	print gamesInDB
+
+	notAddedGames = list(set(gamesInDB).symmetric_difference(set(gamesInUserGames)))
+	print("Not added games: " + str(len(notAddedGames)))
+	addGamesToDB(notAddedGames, cursor)
+
+
 #
 # Skip Achievement score so far, first collect user games, 
 # then fill gamelist with gobal stats and then later compute achievementscore
@@ -260,40 +310,7 @@ myList = [76561198020163289, 76561198100742438, 76561198026036441, 7656119803516
 
 limit = 10000
 actionCounter = 0
-while actionCounter < limit:
-	try:
-		usersWithoutGames = getUsersWithoutGamesFromDB(500)
-		actionCounter += addUserGames(usersWithoutGames, cursor)
-		print("ActionCounter: " + str(actionCounter))
-	except urllib2.HTTPError:
-		print("HTTP Error")
-		pass
-    
+addMissingGames(cursor)
 
-
-# cursor.execute("SELECT loccountrycode, COUNT(*) FROM user group by loccountrycode")
-# myDict = (cursor.fetchall())
-# for i in myDict:
-# 	print i
-# cursor.execute("SELECT gameListLoaded, COUNT(*) FROM user group by gameListLoaded")
-# myDict = (cursor.fetchall())
-# for i in myDict:
-# 	print i
-#crawlUserIDsViaFriends(cursor, 1000)
-#print getUserListFromDB(cursor)
-
-
-#ownedGames = getOwnedGames(myList[3])
-
-# counter = 0
-# print (len(ownedGames))
-#for game in ownedGames:
- 	#gameId = game[0]
- 	#playTime = game[1]
-	#globalAchievements = getGlobalAchievementsPercentage(gameId)
-	#print(myList[0], gameId)
- 	#playerAchievements = getPlayerAchievements(myList[0], gameId)
-	#print (achievementScore(globalAchievements, playerAchievements), gameId, str(playTime) + " min")
-	#print (getUserTags(gameId), getGameName(gameId))
 cursor.close()
 connection.close()
