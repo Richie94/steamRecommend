@@ -166,12 +166,12 @@ def getAllApps():
 def getGamesInUserGames(cursor):
 	cursor.execute("SELECT DISTINCT gameid FROM user_games;")
 	gameList = cursor.fetchall()
-	return [game["gameid"] for game in gameList]
+	return [str(game["gameid"]) for game in gameList]
 
 def getGamesInGames(cursor):
 	cursor.execute("SELECT id FROM game;")
 	gameList = cursor.fetchall()
-	return [game["id"] for game in gameList]
+	return [str(game["id"]) for game in gameList]
 
 # without achievement sum so far
 def addGamesToDB(gameIdList, cursor):
@@ -193,7 +193,6 @@ def addGamesToDB(gameIdList, cursor):
 		else:
 			gameName = "-- Not found --"
 		joinedTags = ','.join(tags)
-		print joinedTags, gameName
 		try:
 			cursor.execute("INSERT INTO `game` (`id`,`name`,`gameTags`) VALUES (%s, %s, %s);", (str(gameId),gameName, joinedTags))
 		except pymysql.err.IntegrityError:
@@ -206,9 +205,10 @@ def addGamesToDB(gameIdList, cursor):
 def addMissingGames(cursor):
 	gamesInDB = getGamesInGames(cursor)
 	gamesInUserGames = getGamesInUserGames(cursor)
-	print gamesInDB
+	
+	notAddedGames = list(set(gamesInUserGames).symmetric_difference(gamesInDB))
 
-	notAddedGames = list(set(gamesInDB).symmetric_difference(set(gamesInUserGames)))
+	print len(gamesInDB), len(gamesInUserGames), len(notAddedGames)
 	print("Not added games: " + str(len(notAddedGames)))
 	addGamesToDB(notAddedGames, cursor)
 
@@ -267,11 +267,11 @@ def addUserSummarys(userList, cursor):
 		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
 		currentTime = now.strftime("%Y-%m-%d %H:%M")
 		queryData.append((steamid,visibility,realname,timecreated,loccountrycode,locstatecode,loccityid,currentTime))
-	try:
-		cursor.executemany(query, queryData)
-	except pymysql.err.IntegrityError:
+	#try:
+	cursor.executemany(query, queryData)
+	#except pymysql.err.IntegrityError:
 		# if we override something
-		pass
+	#	pass
 	print "("+str(len(queryData)) + ") - Done"
 	return 1
 
@@ -299,6 +299,10 @@ def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 		else:
 			currentUser = choice(getUserListFromDB(cursor))
 
+
+proxy_support = urllib2.ProxyHandler({"http":"http://173.192.21.89:80"})
+opener = urllib2.build_opener(proxy_support)
+urllib2.install_opener(opener)
 
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
