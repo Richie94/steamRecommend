@@ -150,6 +150,10 @@ def getUsersWithoutGamesFromDB(limit, offset=0):
 	userList = cursor.fetchall()[offset:offset+limit]
 	return [user["steamid"] for user in userList]
 
+def getUsersGamesWithoutAchievementsFromDB(limit, offset=0):
+    cursor.execute("SELECT steamid,gameid FROM user_games WHERE achievementscore IS NULL AND timeforever>0 LIMIT %s;" % limit)  #visibility implizit 3
+    gameList = cursor.fetchall()
+    return [[game["steamid"],game["gameid"]] for game in gameList]
 
 def getAllApps():
 	appDict = {}
