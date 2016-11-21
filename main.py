@@ -117,8 +117,8 @@ def getUrl(url):
 		req = urllib2.Request(url, headers={'User-Agent' : "Magic Browser"}) 
 		f = urllib2.urlopen(req)
 		return f
-	except:
-		print ("Error in URL")
+	except Exception as e:
+		print ("getUrl error:" + str(e))
 		return ""
 
 def getUserTags(gameId):
@@ -216,11 +216,27 @@ def addMissingGames(cursor):
 	print("Not added games: " + str(len(notAddedGames)))
 	addGamesToDB(notAddedGames, cursor)
 
+def addAchievementsAndScore(userGameList,cursor):
+    queryData = []
+    queryData2 = []
+    query = "INSERT INTO `user_achievements`(`steamid`,`gameid`,`achievement`,`achieved` ) VALUES (%s, %s, %s, %s)"
+    query2 = "UPDATE `user_games` SET `achievementscore` = %s WHERE  steamid = %s AND gameid = %s"
+    for ug in userGameList:
+        curAch = getPlayerAchievements(ug[0], ug[1])
+        for i in range(0,len(curAch.keys())):
+            appendList = [ug[0],ug[1],curAch.keys()[i],curAch.values()[i]]
+            if(len(appendList)==4):
+                queryData.append(appendList)
+        #queryData.append([[curAch.keys()[i],curAch.values()[i]] for i in range(0,len(curAch.keys()))])
+        queryData2.append([achievementScore(getGlobalAchievementsPercentage(ug[1]),curAch),ug[0],ug[1]])
+    try:
+        cursor.executemany(query, queryData)
+        cursor.executemany(query2,queryData2)
+    except pymysql.err.IntegrityError as e:
+        print ("MySQL Error! " + str(e))
+        pass
+    return 1
 
-#
-# Skip Achievement score so far, first collect user games, 
-# then fill gamelist with gobal stats and then later compute achievementscore
-#
 def addUserGames(userList,cursor):
 	actionCounter = 0
 	for user in userList:
@@ -304,9 +320,11 @@ def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 			currentUser = choice(getUserListFromDB(cursor))
 
 
-proxy_support = urllib2.ProxyHandler({"http":"http://173.192.21.89:80"})
-opener = urllib2.build_opener(proxy_support)
-urllib2.install_opener(opener)
+useProxy = False
+if(useProxy):
+    proxy_support = urllib2.ProxyHandler({"http":"http://173.192.21.89:80"})
+    opener = urllib2.build_opener(proxy_support)
+    urllib2.install_opener(opener)
 
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
@@ -318,7 +336,7 @@ myList = [76561198020163289, 76561198100742438, 76561198026036441, 7656119803516
 
 limit = 10000
 actionCounter = 0
+#addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
 addMissingGames(cursor)
-
 cursor.close()
 connection.close()
