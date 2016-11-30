@@ -227,7 +227,7 @@ def addAchievementsAndScore(userGameList,cursor):
             appendList = [ug[0],ug[1],curAch.keys()[i],curAch.values()[i]]
             if(len(appendList)==4):
                 queryData.append(appendList)
-        #queryData.append([[curAch.keys()[i],curAch.values()[i]] for i in range(0,len(curAch.keys()))])
+        queryData.append([[curAch.keys()[i],curAch.values()[i]] for i in range(0,len(curAch.keys()))])
         queryData2.append([achievementScore(getGlobalAchievementsPercentage(ug[1]),curAch),ug[0],ug[1]])
     try:
         cursor.executemany(query, queryData)
@@ -287,11 +287,11 @@ def addUserSummarys(userList, cursor):
 		loccountrycode, locstatecode, loccityid = str(curSum["loccountrycode"]), str(curSum["locstatecode"]), str(curSum["loccityid"])
 		currentTime = now.strftime("%Y-%m-%d %H:%M")
 		queryData.append((steamid,visibility,realname,timecreated,loccountrycode,locstatecode,loccityid,currentTime))
-	#try:
-	cursor.executemany(query, queryData)
-	#except pymysql.err.IntegrityError:
-		# if we override something
-	#	pass
+	try:
+		cursor.executemany(query, queryData)
+	except pymysql.err.IntegrityError:
+		#if we override something
+		pass
 	print "("+str(len(queryData)) + ") - Done"
 	return 1
 
@@ -337,6 +337,7 @@ myList = [76561198020163289, 76561198100742438, 76561198026036441, 7656119803516
 limit = 10000
 actionCounter = 0
 #addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
-addMissingGames(cursor)
+#addMissingGames(cursor)
+crawlUserIDsViaFriends(cursor)
 cursor.close()
 connection.close()
