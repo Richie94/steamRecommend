@@ -206,7 +206,7 @@ def addGamesToDB(gameIdList, cursor):
 		print("Inserted "+ str(gameId) + " - " + gameName + " : " + joinedTags)
 	return actionCounter
 
-def addMissingGames(cursor):
+def crawlGameInformation(cursor):
 	gamesInDB = getGamesInGames(cursor)
 	gamesInUserGames = getGamesInUserGames(cursor)
 	
@@ -295,8 +295,12 @@ def addUserSummarys(userList, cursor):
 	print "("+str(len(queryData)) + ") - Done"
 	return 1
 
+def crawlUserGames():
+	userList = getUsersWithoutGamesFromDB(10000, cursor)
+	addUserGames(userList,cursor)
+
 # actionCounter counts calls to steam API
-def crawlUserIDsViaFriends(cursor, limitCounter=10000):
+def crawlUserID(cursor, limitCounter=10000):
 	actionCounter = 0
 	userList = getUserListFromDB(cursor)
 	#start with random user
@@ -338,6 +342,7 @@ limit = 10000
 actionCounter = 0
 #addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
 #addMissingGames(cursor)
-crawlUserIDsViaFriends(cursor)
+#crawlUserIDsViaFriends(cursor)
+crawlUserGames()
 cursor.close()
 connection.close()
