@@ -235,7 +235,6 @@ def addNotFoundGamesFromSteamDB(missingGamesList, cursor):
 		print(joinedTags + "\n")
 
 		try:
-			#cursor.execute("INSERT INTO `game` (`id`,`name`,`gameTags`) VALUES (%s, %s, %s);", (str(gameId),gameName, joinedTags))
 			cursor.execute("UPDATE `game` SET name=%s, gameTags=%s WHERE id=%s",(gameName, joinedTags,str(gameId)))
 		except pymysql.err.IntegrityError:
 			# if we override something
@@ -251,8 +250,7 @@ def addMissingGames(cursor):
 	 notAddedGames = list(set(gamesInUserGames).symmetric_difference(gamesInDB))
 	 print len(gamesInDB), len(gamesInUserGames), len(notAddedGames)
 	 print("Not added games: " + str(len(notAddedGames)))
-	 #addGamesToDB(notAddedGames, cursor)
-
+	 addGamesToDB(notAddedGames, cursor)
   	 cursor.execute("""SELECT id FROM game WHERE name = "-- Not found --";""")
   	 notFoundList = cursor.fetchall()
 	 addNotFoundGamesFromSteamDB(notFoundList, cursor)
