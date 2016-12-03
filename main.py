@@ -146,9 +146,15 @@ def getUserListFromDB(cursor):
 	 return [user["steamid"] for user in userList]
 
 def getUsersWithoutGamesFromDB(limit, offset=0):
+<<<<<<< HEAD
 	 cursor.execute("SELECT steamid FROM user where gameListLoaded = 0 and visibility = 3;")
 	 userList = cursor.fetchall()[offset:offset+limit]
 	 return [user["steamid"] for user in userList]
+=======
+	cursor.execute("SELECT steamid FROM user where gameListLoaded = 0 and visibility = 3 LIMIT %s;" % limit)
+	userList = cursor.fetchall()
+	return [user["steamid"] for user in userList]
+>>>>>>> 8e2c5b91a4a593ed825cc07f88d67a660388385e
 
 def getUsersGamesWithoutAchievementsFromDB(limit, offset=0):
 	 cursor.execute("SELECT steamid,gameid FROM user_games WHERE achievementscore IS NULL AND timeforever>0 LIMIT %s;" % limit)  #visibility implizit 3
@@ -238,6 +244,7 @@ def addNotFoundGamesFromSteamDB(missingGamesList, cursor):
 		actionCounter += 1
 	return actionCounter
 
+<<<<<<< HEAD
 def addMissingGames(cursor):
 	 gamesInDB = getGamesInGames(cursor)
 	 gamesInUserGames = getGamesInUserGames(cursor)
@@ -250,6 +257,8 @@ def addMissingGames(cursor):
   	 notFoundList = cursor.fetchall()
 	 addNotFoundGamesFromSteamDB(notFoundList, cursor)
 
+=======
+>>>>>>> 8e2c5b91a4a593ed825cc07f88d67a660388385e
 def addAchievementsAndScore(userGameList,cursor):
 	 queryData = []
 	 queryData2 = []
@@ -329,7 +338,12 @@ def addUserSummarys(userList, cursor):
 	 print "("+str(len(queryData)) + ") - Done"
 	 return 1
 
+def crawlUserGames():
+	userList = getUsersWithoutGamesFromDB(10000, cursor)
+	addUserGames(userList,cursor)
+
 # actionCounter counts calls to steam API
+<<<<<<< HEAD
 def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 	 actionCounter = 0
 	 userList = getUserListFromDB(cursor)
@@ -352,6 +366,40 @@ def crawlUserIDsViaFriends(cursor, limitCounter=10000):
 				currentUser = choice(friendList)    
 		  else:
 				currentUser = choice(getUserListFromDB(cursor))
+=======
+def crawlUserID(cursor, limitCounter=10000):
+	actionCounter = 0
+	userList = getUserListFromDB(cursor)
+	#start with random user
+	currentUser = choice(userList)
+	while actionCounter < limitCounter:
+		print("Action: " + str(actionCounter) + " - CurrentUser: " + str(currentUser))
+		# 1. get Friends from User (1x call)
+		userFriends = getFriends(currentUser)
+		print "\tLoaded friendlist"
+		friendList = [str(user) for user in userFriends]
+		actionCounter += 1
+		# 2. add their summarys (max 100 summarys per call)
+		addUserSummarys(friendList, cursor)
+		actionCounter += 1
+		# 3. add them to friendslist
+		addFriendsToUser(currentUser, userFriends, cursor)
+		# 4. take random friend as starting point, if no friend findable take random user
+		if len(userFriends.keys()) > 1:
+			currentUser = choice(friendList)	
+		else:
+			currentUser = choice(getUserListFromDB(cursor))
+>>>>>>> 8e2c5b91a4a593ed825cc07f88d67a660388385e
+
+def crawlGameInformation(cursor):
+	gamesInDB = getGamesInGames(cursor)
+	gamesInUserGames = getGamesInUserGames(cursor)
+	
+	notAddedGames = list(set(gamesInUserGames).symmetric_difference(gamesInDB))
+
+	print len(gamesInDB), len(gamesInUserGames), len(notAddedGames)
+	print("Not added games: " + str(len(notAddedGames)))
+	addGamesToDB(notAddedGames, cursor)
 
 
 useProxy = False
@@ -369,7 +417,11 @@ myList = [76561198020163289, 76561198100742438, 76561198026036441, 7656119803516
 limit = 10000
 actionCounter = 0
 #addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
+<<<<<<< HEAD
 addMissingGames(cursor)
 #crawlUserIDsViaFriends(cursor)
+=======
+crawlUserGames()
+>>>>>>> 8e2c5b91a4a593ed825cc07f88d67a660388385e
 cursor.close()
 connection.close()
