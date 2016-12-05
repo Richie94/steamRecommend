@@ -15,6 +15,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
+from pylab import *
+import operator
 
 key = config.key
 
@@ -103,7 +105,7 @@ def predictLand(userList,cursor):
 			laenderTags[user["loccountrycode"]].extend(userTags)
 
 	usedTags = []
-	countryDictList = []
+	countryDictDict = {}
 	with open("tag_ana_country.txt", "w") as f:
 		for country in laenderTags:
 			countryTagDict = defaultdict(lambda:0)
@@ -111,18 +113,33 @@ def predictLand(userList,cursor):
 				countryTagDict[tag] += 1
 				if tag not in usedTags:
 					usedTags.append(tag)
-			countryDictList.append((country,countryTagDict))
+			countryDictDict[country] = countryTagDict
 			for tag in countryTagDict:
 				f.write(str(country)+"\t"+str(tag) + "\t" + str(countryTagDict[tag])+"\n")
 
 	with open("tag_ana_tag.txt", "w") as f:
 		for tag in usedTags:
-			for country, countryTagDict in countryDictList:
+			for country in countryDictDict:
+				countryTagDict = countryDictDict[country]
 				if tag in countryTagDict:
 					f.write(str(tag) + "\t" + str(country) + "\t" + str(countryTagDict[tag])+"\n")
 
 
-	print len(X),len(y)
+	counter = 1
+	for c in ["US", "DE", "BR"]:
+		figure(counter, figsize=(6,6))
+		ax = axes([0.1, 0.1, 0.8, 0.8])
+		US_countryDict = countryDictDict[c]
+		sorted_us_dict = sorted(US_countryDict.items(), key=operator.itemgetter(1), reverse=True)[:10]
+		sorted_us_labels = [tag for (tag,amount) in sorted_us_dict]
+
+		fracs = [US_countryDict[tag] for tag in sorted_us_labels]
+
+		pie(fracs, labels=sorted_us_labels, autopct='%1.1f%%', shadow=True, startangle=90)
+		title(str(c))
+		counter += 1
+	show()
+
 	# SVM, NB, AB, RF
 	# params = dict(
  #       clf__C = [0.1, 0.2, 0.3, 0.5, 1.0, 10, 100],
