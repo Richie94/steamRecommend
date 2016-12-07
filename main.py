@@ -145,7 +145,7 @@ def getUserListFromDB(cursor):
 	 userList = cursor.fetchall()
 	 return [user["steamid"] for user in userList]
 
-def getUsersWithoutGamesFromDB(limit, offset=0):
+def getUsersWithoutGamesFromDB(limit, cursor, offset=0):
 
 	 cursor.execute("SELECT steamid FROM user where gameListLoaded = 0 and visibility = 3;")
 	 userList = cursor.fetchall()[offset:offset+limit]
@@ -336,7 +336,7 @@ def addUserSummarys(userList, cursor):
 	 return 1
 
 def crawlUserGames():
-	userList = getUsersWithoutGamesFromDB(10000, cursor)
+	userList = getUsersWithoutGamesFromDB(0, cursor)
 	addUserGames(userList,cursor)
 
 # actionCounter counts calls to steam API
