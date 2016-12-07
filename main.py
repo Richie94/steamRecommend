@@ -415,7 +415,7 @@ limit = 10000
 actionCounter = 0
 #addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
 addMissingGames(cursor)
-#crawlUserIDsViaFriends(cursor)
+crawlUserIDsViaFriends(cursor)
 crawlUserGames()
 cursor.close()
 connection.close()
