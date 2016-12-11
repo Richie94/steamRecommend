@@ -146,15 +146,9 @@ def getUserListFromDB(cursor):
 	 return [user["steamid"] for user in userList]
 
 def getUsersWithoutGamesFromDB(limit, cursor, offset=0):
-
 	 cursor.execute("SELECT steamid FROM user where gameListLoaded = 0 and visibility = 3;")
 	 userList = cursor.fetchall()[offset:offset+limit]
 	 return [user["steamid"] for user in userList]
-
-	 cursor.execute("SELECT steamid FROM user where gameListLoaded = 0 and visibility = 3 LIMIT %s;" % limit)
-	 userList = cursor.fetchall()
-	 return [user["steamid"] for user in userList]
-
 
 def getUsersGamesWithoutAchievementsFromDB(limit, offset=0):
 	 cursor.execute("SELECT steamid,gameid FROM user_games WHERE achievementscore IS NULL AND timeforever>0 LIMIT %s;" % limit)  #visibility implizit 3
@@ -171,7 +165,6 @@ def getAllApps():
 		  name = inArray("name", app)
 		  appDict[appid] = name
 	 return appDict
-
 
 def getGamesInUserGames(cursor):
 	 cursor.execute("SELECT DISTINCT gameid FROM user_games;")
@@ -216,15 +209,10 @@ def addNotFoundGamesFromSteamDB(missingGamesList, cursor):
 	actionCounter = 0
 	for game in missingGamesList:
   		gameId = str(game["id"])
-  		#print(gameId)
 		output = requests.get("https://steamdb.info/app/" + gameId + "/").content
-		#print("https://steamdb.info/app/" + str(gameId) + "/")
 		p = re.compile('<title>.*? · ', re.DOTALL)
 		results = p.findall(output)
 		gameName = results[0].split(">")[1].split(" ·")[0]
-
-
-		#User Tags
 		tags = []
 		p = re.compile('tagid=.*?">.*?<',re.DOTALL)
 		m = p.findall(output)
@@ -233,7 +221,6 @@ def addNotFoundGamesFromSteamDB(missingGamesList, cursor):
 		joinedTags = ','.join(tags)
 		print("Set name and tags for " + gameId + " - " + gameName + " from SteamDB.")
 		print(joinedTags + "\n")
-
 		try:
 			cursor.execute("UPDATE `game` SET name=%s, gameTags=%s WHERE id=%s",(gameName, joinedTags,str(gameId)))
 		except pymysql.err.IntegrityError:
@@ -242,19 +229,6 @@ def addNotFoundGamesFromSteamDB(missingGamesList, cursor):
 			pass
 		actionCounter += 1
 	return actionCounter
-
-
-def addMissingGames(cursor):
-	 gamesInDB = getGamesInGames(cursor)
-	 gamesInUserGames = getGamesInUserGames(cursor)
-	 notAddedGames = list(set(gamesInUserGames).symmetric_difference(gamesInDB))
-	 print len(gamesInDB), len(gamesInUserGames), len(notAddedGames)
-	 print("Not added games: " + str(len(notAddedGames)))
-	 addGamesToDB(notAddedGames, cursor)
-  	 cursor.execute("""SELECT id FROM game WHERE name = "-- Not found --";""")
-  	 notFoundList = cursor.fetchall()
-	 addNotFoundGamesFromSteamDB(notFoundList, cursor)
-
 
 def addAchievementsAndScore(userGameList,cursor):
 	 queryData = []
@@ -339,31 +313,6 @@ def crawlUserGames():
 	userList = getUsersWithoutGamesFromDB(0, cursor)
 	addUserGames(userList,cursor)
 
-# actionCounter counts calls to steam API
-
-def crawlUserIDsViaFriends(cursor, limitCounter=10000):
-	 actionCounter = 0
-	 userList = getUserListFromDB(cursor)
-	 #start with random user
-	 currentUser = choice(userList)
-	 while actionCounter < limitCounter:
-		  print("Action: " + str(actionCounter) + " - CurrentUser: " + str(currentUser))
-		  # 1. get Friends from User (1x call)
-		  userFriends = getFriends(currentUser)
-		  print "\tLoaded friendlist"
-		  friendList = [str(user) for user in userFriends]
-		  actionCounter += 1
-		  # 2. add their summarys (max 100 summarys per call)
-		  addUserSummarys(friendList, cursor)
-		  actionCounter += 1
-		  # 3. add them to friendslist
-		  addFriendsToUser(currentUser, userFriends, cursor)
-		  # 4. take random friend as starting point, if no friend findable take random user
-		  if len(userFriends.keys()) > 1:
-				currentUser = choice(friendList)    
-		  else:
-				currentUser = choice(getUserListFromDB(cursor))
-
 def crawlUserID(cursor, limitCounter=10000):
 	actionCounter = 0
 	userList = getUserListFromDB(cursor)
@@ -391,12 +340,13 @@ def crawlUserID(cursor, limitCounter=10000):
 def crawlGameInformation(cursor):
 	gamesInDB = getGamesInGames(cursor)
 	gamesInUserGames = getGamesInUserGames(cursor)
-	
 	notAddedGames = list(set(gamesInUserGames).symmetric_difference(gamesInDB))
-
 	print len(gamesInDB), len(gamesInUserGames), len(notAddedGames)
 	print("Not added games: " + str(len(notAddedGames)))
 	addGamesToDB(notAddedGames, cursor)
+	cursor.execute("""SELECT id FROM game WHERE name = "-- Not found --";""")
+	notFoundList = cursor.fetchall()
+	addNotFoundGamesFromSteamDB(notFoundList, cursor)
 
 
 useProxy = False
@@ -414,8 +364,8 @@ myList = [76561198020163289, 76561198100742438, 76561198026036441, 7656119803516
 limit = 10000
 actionCounter = 0
 #addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
-addMissingGames(cursor)
-crawlUserIDsViaFriends(cursor)
+crawlGameInformation(cursor)
+crawlUserID(cursor)
 crawlUserGames()
 cursor.close()
 connection.close()
