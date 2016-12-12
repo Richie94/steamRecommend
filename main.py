@@ -150,6 +150,11 @@ def getUsersWithoutGamesFromDB(limit, cursor, offset=0):
 	userList = cursor.fetchall()[offset:offset+limit]
 	return [user["steamid"] for user in userList]
 
+def getUsersWithoutFriendListFromDB(cursor, limit=500, offset=0):
+	cursor.execute("SELECT steamid FROM user where friendListLoaded = 0 and visibility = 3;")
+	userList = cursor.fetchall()[offset:offset+limit]
+	return [user["steamid"] for user in userList]
+
 def getUsersGamesWithoutAchievementsFromDB(limit, offset=0):
 	cursor.execute("SELECT steamid,gameid FROM user_games WHERE achievementscore IS NULL AND timeforever>0 LIMIT %s;" % limit)  #visibility implizit 3
 	gameList = cursor.fetchall()
@@ -348,6 +353,18 @@ def crawlGameInformation(cursor):
 	notFoundList = cursor.fetchall()
 	addNotFoundGamesFromSteamDB(notFoundList, cursor)
 
+def crawlFriendLists(cursor):
+	withoutFriendlist = getUsersWithoutFriendListFromDB(cursor)
+	counter = 0
+	for user in withoutFriendlist:
+		userFriends = getFriends(user)
+		addUserSummarys(friendList, cursor)
+		addFriendsToUser(user, userFriends, cursor)
+		cursor.execute("UPDATE user SET friendListLoaded = 1 WHERE steamid like " + user + ";")
+		counter += 2
+	return counter
+
+
 
 useProxy = False
 if(useProxy):
@@ -361,8 +378,16 @@ cursor = connection.cursor()
 
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
-limit = 10000
+limit = 100000
 actionCounter = 0
+while actionCounter < limit:
+	try:
+		actionCounter += crawlFriendLists(cursor)
+	except KeyboardInterrupt:
+		break
+	except:
+		pass
+
 #addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
 #crawlGameInformation(cursor)
 crawlUserID(cursor)
