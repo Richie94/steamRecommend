@@ -336,6 +336,8 @@ def crawlUserID(cursor, limitCounter=10000):
 		# 3. add them to friendslist
 		addFriendsToUser(currentUser, userFriends, cursor)
 		# 4. take random friend as starting point, if no friend findable take random user
+		
+		cursor.execute("UPDATE user SET friendListLoaded = 1 WHERE steamid like " + currentUser + ";")
 		if len(userFriends.keys()) > 1:
 			currentUser = choice(friendList)	
 		else:
