@@ -336,7 +336,7 @@ def crawlUserID(cursor, limitCounter=10000):
 		# 3. add them to friendslist
 		addFriendsToUser(currentUser, userFriends, cursor)
 		# 4. take random friend as starting point, if no friend findable take random user
-		
+
 		cursor.execute("UPDATE user SET friendListLoaded = 1 WHERE steamid like " + currentUser + ";")
 		if len(userFriends.keys()) > 1:
 			currentUser = choice(friendList)	
@@ -356,10 +356,13 @@ def crawlGameInformation(cursor):
 	addNotFoundGamesFromSteamDB(notFoundList, cursor)
 
 def crawlFriendLists(cursor):
+	print "Get Users w/ friendlist"
 	withoutFriendlist = getUsersWithoutFriendListFromDB(cursor)
+	print "Got em"
 	counter = 0
 	for user in withoutFriendlist:
 		userFriends = getFriends(user)
+		friendList = [str(user) for user in userFriends]
 		addUserSummarys(friendList, cursor)
 		addFriendsToUser(user, userFriends, cursor)
 		cursor.execute("UPDATE user SET friendListLoaded = 1 WHERE steamid like " + user + ";")
