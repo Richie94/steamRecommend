@@ -335,9 +335,8 @@ def crawlUserID(cursor, limitCounter=10000):
 		actionCounter += 1
 		# 3. add them to friendslist
 		addFriendsToUser(currentUser, userFriends, cursor)
+		cursor.execute("UPDATE user SET friendListLoaded = 1 where steamid='"+currentUser+"';")
 		# 4. take random friend as starting point, if no friend findable take random user
-
-		cursor.execute("UPDATE user SET friendListLoaded = 1 WHERE steamid like " + currentUser + ";")
 		if len(userFriends.keys()) > 1:
 			currentUser = choice(friendList)	
 		else:
@@ -356,16 +355,15 @@ def crawlGameInformation(cursor):
 	addNotFoundGamesFromSteamDB(notFoundList, cursor)
 
 def crawlFriendLists(cursor):
-	print "Get Users w/ friendlist"
 	withoutFriendlist = getUsersWithoutFriendListFromDB(cursor)
-	print "Got em"
 	counter = 0
 	for user in withoutFriendlist:
+		print user
 		userFriends = getFriends(user)
 		friendList = [str(user) for user in userFriends]
 		addUserSummarys(friendList, cursor)
 		addFriendsToUser(user, userFriends, cursor)
-		cursor.execute("UPDATE user SET friendListLoaded = 1 WHERE steamid like " + user + ";")
+		cursor.execute("UPDATE user SET friendListLoaded = 1 where steamid='"+user+"';")
 		counter += 2
 	return counter
 
@@ -379,19 +377,21 @@ if(useProxy):
 
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
+connection.autocommit(True)
 cursor = connection.cursor()
+cursor.execute("""set session transaction isolation level READ COMMITTED""")
 
 # Ulrich, meine, svens, Luux
 myList = [76561198020163289, 76561198100742438, 76561198026036441, 76561198035162874]
 limit = 100000
 actionCounter = 0
 while actionCounter < limit:
-	try:
-		actionCounter += crawlFriendLists(cursor)
-	except KeyboardInterrupt:
-		break
-	except:
-		pass
+	#try:
+	actionCounter += crawlFriendLists(cursor)
+	#except KeyboardInterrupt:
+	#	break
+	#except:
+	#	pass
 
 #addAchievementsAndScore(getUsersGamesWithoutAchievementsFromDB(5), cursor)
 #crawlGameInformation(cursor)
