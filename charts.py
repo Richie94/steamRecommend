@@ -1,6 +1,8 @@
 from pylab import *
 from collections import defaultdict
 import operator
+import pymysql
+import utils, config
 
 def read_continent_tags():
 	#load countryTags
@@ -12,6 +14,25 @@ def read_continent_tags():
 			if len(parts) == 3 and parts[1] != "":
 				continentTags[parts[0]].append((parts[1],float(parts[2])))
 	return continentTags
+
+def getBasicContinentTagsFromDB():
+	continentTags = defaultdict(lambda:[])
+	connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
+	cursor = connection.cursor()
+	basicTagDict = utils.getGameTagDict(cursor, "basicTags")
+	userGameDict = utils.getUserGameDict(cursor)
+	userList = utils.readInUsers(cursor, limit=10000)
+
+	for user in userList:
+		# 1. get gamelist for every user
+		userGameList = userGameDict[user]
+		# 2. check for every user his continent/country
+
+
+
+	
+
+getBasicContinentTagsFromDB()
 
 continentTags = read_continent_tags()
 
@@ -41,7 +62,7 @@ for c in continentTagsTop10.keys():
 	pie(fracs, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90)
 	title(str(c))
 	counter += 1
-show()
+#show()
 
 
 
