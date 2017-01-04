@@ -26,6 +26,7 @@ from incf.countryutils import transformations
 from tpot import TPOTClassifier
 
 key = config.key
+min_playtime = 120; # minimum playtime of a game to appear in the UserGame-List
 
 def readInUsers(cursor, limit=2000):
 	userList = []
@@ -60,7 +61,7 @@ def getUserGameDict(cursor):
 	#results can be larger then default
 	query = "SET group_concat_max_len = 32384"
 	cursor.execute(query)
-	query = "SELECT steamid, GROUP_CONCAT(gameid SEPARATOR ', ') as gameList FROM user_games WHERE timeforever > 120 GROUP BY steamid"
+	query = "SELECT steamid, GROUP_CONCAT(gameid SEPARATOR ', ') as gameList FROM user_games WHERE timeforever > " + str(min_playtime) + " GROUP BY steamid"
 	cursor.execute(query)
 	user_games = cursor.fetchall()
 	for user_game in user_games:
