@@ -44,7 +44,26 @@ def getGameTagDict(cursor, tagName="transformedGameTags"):
 	gameTags = cursor.fetchall()
 	for tag in gameTags:
 		gameTagDict[tag["id"]] = tag[tagName].split(",")
+	print("GameTagDict loaded")
 	return gameTagDict
+
+def getGameNameDict(cursor):
+	gameTagDict = {}
+	query = "Select id,name from game;"
+	cursor.execute(query)
+	gameTags = cursor.fetchall()
+	for tag in gameTags:
+		gameTagDict[tag["id"]] = tag["name"]
+	return gameTagDict
+
+def readInGameAmount(cursor):
+	amountDict = {}
+	query = "Select steamid, COUNT(gameid) as amount from user_games Group By steamid"
+	cursor.execute(query)
+	userList = cursor.fetchall()
+	for user in userList:
+		amountDict[user["steamid"]] = user["amount"]
+	return amountDict
 
 def readInUsers(cursor, limit=2000):
 	userList = []
@@ -54,7 +73,7 @@ def readInUsers(cursor, limit=2000):
 	for user in userList:
 		userDict = {}
 		if "steamid" in user:
-			userDict["steamId"] = user["steamid"]
+			userDict["steamId"] = str(user["steamid"])
 			userDict["visibility"] = user["visibility"]
 			userDict["realName"] = user["realname"]
 			userDict["timecreated"] = user["timecreated"]
@@ -74,7 +93,8 @@ def getUserGameDict(cursor):
 	cursor.execute(query)
 	user_games = cursor.fetchall()
 	for user_game in user_games:
-		userGameDict[user_game["steamid"]] = user_game["gameList"]
+		userGameDict[str(user_game["steamid"])] = user_game["gameList"]
+	print("UserGameDict loaded")
 	return userGameDict
 
 def getSubstitutionDict():

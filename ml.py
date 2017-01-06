@@ -4,7 +4,7 @@ except ImportError:
     import urllib2
 
 import json, re, sys
-import config
+import config, utils
 import numpy
 import pymysql
 from collections import defaultdict
@@ -27,71 +27,12 @@ from tpot import TPOTClassifier
 
 key = config.key
 
-def readInUsers(cursor, limit=2000):
-	userList = []
-	query = """Select * from user where loccountrycode !='' LIMIT %s;""" % limit
-	cursor.execute(query)
-	userList = cursor.fetchall()
-	for user in userList:
-		userDict = {}
-		if "steamid" in user:
-			userDict["steamId"] = user["steamid"]
-			userDict["visibility"] = user["visibility"]
-			userDict["realName"] = user["realname"]
-			userDict["timecreated"] = user["timecreated"]
-			userDict["cityid"] = user["cityid"]
-			userDict["loccountrycode"] = user["loccountrycode"]
-			userDict["locstatecode"] = user["locstatecode"]
-			userList.append(userDict)
-	print("Users Loaded")
-	return userList
-
-def readInGameAmount(cursor):
-	amountDict = {}
-	query = "Select steamid, COUNT(gameid) as amount from user_games Group By steamid"
-	cursor.execute(query)
-	userList = cursor.fetchall()
-	for user in userList:
-		amountDict[user["steamid"]] = user["amount"]
-	return amountDict
-
-def getUserGameDict(cursor):
-	userGameDict = {}
-	#results can be larger then default
-	query = "SET group_concat_max_len = 32384"
-	cursor.execute(query)
-	query = "SELECT steamid, GROUP_CONCAT(gameid SEPARATOR ', ') as gameList FROM user_games WHERE timeforever > 120 GROUP BY steamid"
-	cursor.execute(query)
-	user_games = cursor.fetchall()
-	for user_game in user_games:
-		userGameDict[user_game["steamid"]] = user_game["gameList"]
-	return userGameDict
-
-def getGameTagDict(cursor):
-	gameTagDict = {}
-	query = "Select id,basicTags from game;"
-	cursor.execute(query)
-	gameTags = cursor.fetchall()
-	for tag in gameTags:
-		gameTagDict[tag["id"]] = tag["basicTags"].split(",")
-	return gameTagDict
-
-def getGameNameDict(cursor):
-	gameTagDict = {}
-	query = "Select id,name from game;"
-	cursor.execute(query)
-	gameTags = cursor.fetchall()
-	for tag in gameTags:
-		gameTagDict[tag["id"]] = tag["name"]
-	return gameTagDict
-
-
 def readInGameInformation(userList, cursor):
 	userTagDict = defaultdict(lambda:[])
 	userGameNameDict = defaultdict(lambda:[])
-	gameTagDict = getGameTagDict(cursor)
-	gameNameDict = getGameNameDict(cursor)
-	userGameDict = getUserGameDict(cursor)
+	gameTagDict = utils.getGameTagDict(cursor, "basicTags")
+	gameNameDict = utils.getGameNameDict(cursor)
+	userGameDict = utils.getUserGameDict(cursor)
 	for user in userList:
 		if user in userGameDict:
 			gameList = userGameDict[user].split(",")
@@ -129,24 +70,24 @@ def getParams(clf):
 	elif clf == "RF":
 		return paramsRF
 
-# TODO:	
-# Nur gametags von spielen mit mehr als 0 gespielt
-#
-#
+
 def predictLand(userList,cursor):
+	#somehow it seems that some user do not have steamid
 	userList = [user for user in userList if "steamid" in user]
 	userIdList = [user["steamid"] for user in userList if "steamid" in user]
 	userTagDict,userGameDict = readInGameInformation(userIdList, cursor)
 
-	print "Len of dicts ", len(userTagDict), len(userGameDict)
-
-	userGameAmount = readInGameAmount(cursor)
 	X = []
 	y = []
+	
+	# try to append gameamounts to X
+	userGameAmount = utils.readInGameAmount(cursor)
 	X_game_amounts = []
+
 	# try to not have too much of the same continents
 	continentCounter = defaultdict(lambda: 0)
 	chosenContinents = defaultdict(lambda: 0)
+	continentTagDict = defaultdict(lambda:defaultdict(lambda:0))
 
 	for user in userList:
 		steamId = str(user["steamid"])
@@ -163,6 +104,10 @@ def predictLand(userList,cursor):
 			if continent != "":
 				continentCounter[continent] += 1
 
+				# for graphs
+				for tag in userTagDict[steamId]:
+					continentTagDict[continent][tag] += 1
+
 				if chosenContinents[continent] < 1000 :
 					chosenContinents[continent] += 1
 					
@@ -171,7 +116,19 @@ def predictLand(userList,cursor):
 					y.append(continent)
 	print continentCounter
 	print chosenContinents
+	print continentTagDict
 	print len(X), len(y)
+
+	counter = 0
+	for c in continentTagDict.keys():
+		figure(counter, figsize=(6,6))
+		ax = axes([0.1, 0.1, 0.8, 0.8])
+		labels = [tag for tag in continentTagDict[c]]
+		fracs = [continentTagDict[c][tag] for tag in continentTagDict[c]]
+		pie(fracs, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90)
+		title(str(c))
+		counter += 1
+	show()
 	
 	#pipe = Pipeline([('clf', RandomForestClassifier())])
 	#clf = GridSearchCV(pipe, param_grid=getParams("RF"))
@@ -209,5 +166,5 @@ def predictLand(userList,cursor):
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
 cursor = connection.cursor()
-userList = readInUsers(cursor, limit=10000)
+userList = utils.readInUsers(cursor, limit=10000)
 predictLand(userList, cursor)
