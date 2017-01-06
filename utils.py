@@ -84,12 +84,12 @@ def readInUsers(cursor, limit=2000):
 	print("Users Loaded")
 	return userList
 
-def getUserGameDict(cursor):
+def getUserGameDict(cursor, min_playtime=120):
 	userGameDict = {}
 	#results can be larger then default
 	query = "SET group_concat_max_len = 32384"
 	cursor.execute(query)
-	query = "SELECT steamid, GROUP_CONCAT(gameid SEPARATOR ', ') as gameList FROM user_games WHERE timeforever > 120 GROUP BY steamid"
+	query = "SELECT steamid, GROUP_CONCAT(gameid SEPARATOR ', ') as gameList FROM user_games WHERE timeforever > " + str(min_playtime) + " GROUP BY steamid"
 	cursor.execute(query)
 	user_games = cursor.fetchall()
 	for user_game in user_games:
