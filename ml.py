@@ -187,8 +187,14 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid"):
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
 cursor = connection.cursor()
 
-X = loadObject("x_file.pkl")
-y = loadObject("y_file.pkl")
+X = []
+y = []
+
+try:
+	X = loadObject("x_file.pkl")
+	y = loadObject("y_file.pkl")
+except:
+	pass
 
 userList = []
 if not (len(X) > 0):
