@@ -89,13 +89,15 @@ def getUserGameDict(cursor, min_playtime=120):
 	#results can be larger then default
 	query = "SET group_concat_max_len = 32384"
 	cursor.execute(query)
-	query = "SELECT steamid, GROUP_CONCAT(gameid SEPARATOR ', ') as gameList FROM user_games WHERE timeforever > " + str(min_playtime) + " GROUP BY steamid"
+	query = "SELECT steamid, GROUP_CONCAT(CONCAT(gameid, ':', timeforever) SEPARATOR ', ') as gameList FROM user_games WHERE timeforever > " + str(min_playtime) + " GROUP BY steamid"
 	cursor.execute(query)
 	user_games = cursor.fetchall()
 	for user_game in user_games:
 		userGameDict[str(user_game["steamid"])] = user_game["gameList"]
 	print("UserGameDict loaded")
 	return userGameDict
+
+
 
 def getSubstitutionDict():
 	substitutionDict = {}

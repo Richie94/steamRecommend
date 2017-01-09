@@ -31,19 +31,23 @@ key = config.key
 def readInGameInformation(userList, cursor):
 	userTagDict = defaultdict(lambda:[])
 	userGameNameDict = defaultdict(lambda:[])
+	userGameTimeDict = defaultdict(lambda:defaultdict(lambda:0))
 	gameTagDict = utils.getGameTagDict(cursor, "basicTags")
 	gameNameDict = utils.getGameNameDict(cursor)
 	userGameDict = utils.getUserGameDict(cursor)
 	for user in userList:
 		if user in userGameDict:
 			gameList = userGameDict[user].split(",")
-			gameList = [int(game) for game in gameList]
-			for game in gameList:
+			gameTimeList = [int(game.split(":")[1]) for game in gameList]
+			gameList = [int(game.split(":")[0]) for game in gameList]
+			for i in range(len(gameList)):
+				game = gameList[i]
 				if game in gameTagDict:
 					userTagDict[user].extend(gameTagDict[game])
 				if game in gameNameDict:
 					userGameNameDict[user].append(gameNameDict[game])
-	return userTagDict,userGameNameDict
+					userGameTimeDict[user][game] = gameTimeList[i]
+	return userTagDict,userGameNameDict, userGameTimeDict, gameNameDict
 	
 def clfWithTpot(X, y):
 	count_vect = CountVectorizer()
@@ -107,12 +111,12 @@ def classifyAndPrintResults(clf, clfName, X, y, mode="grid"):
 	score = accuracy_score(y_test, predictions)
 	print clfName, score
 
-def predictLand(userList,cursor, X = [], y = [], mode="grid"):
+def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=1000):
 	if (X == []):	
 		#somehow it seems that some user do not have steamid
 		userList = [user for user in userList if "steamid" in user]
 		userIdList = [user["steamid"] for user in userList if "steamid" in user]
-		userTagDict,userGameDict = readInGameInformation(userIdList, cursor)
+		userTagDict,userGameDict, userGameTimeDict, gameNameDict = readInGameInformation(userIdList, cursor)
 
 		# try to append gameamounts to X
 		userGameAmount = utils.readInGameAmount(cursor)
@@ -128,6 +132,11 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid"):
 			if str(steamId) in userTagDict:
 				userTagList = ' '.join(userTagDict[steamId])
 				userGameList = ' '.join(userGameDict[steamId])
+
+				userGameTimes = []
+				for game in gameNameDict:
+					userGameTimes.append(userGameTimeDict[steamId][game])
+
 				continent = ""
 				# threshold fuer anzahl userTags?
 				try:
@@ -142,7 +151,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid"):
 					for tag in userTagDict[steamId]:
 						continentTagDict[continent][tag] += 1
 
-					if chosenContinents[continent] < 1000 :
+					if chosenContinents[continent] < continentLimit :
 						chosenContinents[continent] += 1
 						
 						X.append(userTagList + userGameList)
@@ -172,6 +181,8 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid"):
 	truncSVD = TruncatedSVD(n_components=100)
 	X = truncSVD.fit_transform(X)
 
+	print("X in final form")
+
 	if mode == "grid":
 		clfName = "SVM"
 		pipe = Pipeline([('clf', SVC())])
@@ -183,6 +194,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid"):
 			clfName = clf_pair[0]
 			clf = clf_pair[1]
 			classifyAndPrintResults(clf, clfName, X, y, mode=mode)
+
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
 cursor = connection.cursor()
@@ -200,4 +212,4 @@ userList = []
 if not (len(X) > 0):
 	userList = utils.readInUsers(cursor, limit=10000)
 
-predictLand(userList, cursor, X=X, y=y, mode="other")
+predictLand(userList, cursor, continentLimit = 1000, X=X, y=y, mode="other")
