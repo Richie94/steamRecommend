@@ -190,6 +190,8 @@ cursor = connection.cursor()
 X = loadObject("x_file.pkl")
 y = loadObject("y_file.pkl")
 
-#userList = utils.readInUsers(cursor, limit=10000)
 userList = []
-predictLand(userList, cursor, X=X, y=y, mode="grid")
+if not (len(X) > 0):
+	userList = utils.readInUsers(cursor, limit=10000)
+
+predictLand(userList, cursor, X=X, y=y, mode="other")
