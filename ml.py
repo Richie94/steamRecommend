@@ -118,9 +118,8 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		userIdList = [user["steamid"] for user in userList if "steamid" in user]
 		userTagDict,userGameDict, userGameTimeDict, gameNameDict = readInGameInformation(userIdList, cursor)
 
-		# try to append gameamounts to X
-		userGameAmount = utils.readInGameAmount(cursor)
-		X_game_amounts = []
+		# try to append gametimes to X
+		X_game_times = []
 
 		# try to not have too much of the same continents
 		continentCounter = defaultdict(lambda: 0)
@@ -155,7 +154,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 						chosenContinents[continent] += 1
 						
 						X.append(userTagList + userGameList)
-						#X_game_amounts.append(userGameAmount[steamId])
+						X_game_times.append(userGameTimes)
 						y.append(continent)
 		print continentCounter
 		print chosenContinents
@@ -176,10 +175,11 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		#show()
 	
 	# Transform String of GameTags to Counts
-	count_vect = CountVectorizer()
-	X = count_vect.fit_transform(X)
-	truncSVD = TruncatedSVD(n_components=100)
-	X = truncSVD.fit_transform(X)
+	#count_vect = CountVectorizer()
+	#X = count_vect.fit_transform(X)
+	#truncSVD = TruncatedSVD(n_components=100)
+	#X = truncSVD.fit_transform(X)
+	X = X_game_times
 
 	print("X in final form")
 
