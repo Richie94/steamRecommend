@@ -119,7 +119,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		userTagDict,userGameDict, userGameTimeDict, gameNameDict = readInGameInformation(userIdList, cursor)
 
 		# try to append gametimes to X
-		X_game_times = []
+		#X_game_times = []
 
 		# try to not have too much of the same continents
 		continentCounter = defaultdict(lambda: 0)
@@ -157,11 +157,17 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 						X_game_times.append(userGameTimes)
 						y.append(continent)
 		print continentCounter
+		print "\n"
 		print chosenContinents
+		print "\n"
 		print continentTagDict
+		print "\n"
 		print len(X), len(y)
 		saveObject(X, "x_file")
 		saveObject(y, "y_file")
+		saveObject(X_game_times, "x_game_times_file")
+
+		print("cached x, y and x_game_times")
 
 		counter = 0
 		for c in continentTagDict.keys():
@@ -179,9 +185,12 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 	#X = count_vect.fit_transform(X)
 	#truncSVD = TruncatedSVD(n_components=100)
 	#X = truncSVD.fit_transform(X)
+
+
 	X = X_game_times
 
 	print("X in final form")
+
 
 	if mode == "grid":
 		clfName = "SVM"
@@ -201,10 +210,15 @@ cursor = connection.cursor()
 
 X = []
 y = []
+# try to append gametimes to X
+X_game_times = []
 
 try:
 	X = loadObject("x_file.pkl")
 	y = loadObject("y_file.pkl")
+	X_game_times=loadObject("x_game_times_file.pkl")
+	
+	print("loaded x, y and x_game_times from file")
 except:
 	pass
 
