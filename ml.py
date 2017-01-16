@@ -25,6 +25,9 @@ from pylab import *
 import operator
 from incf.countryutils import transformations
 from tpot import TPOTClassifier
+from scipy import sparse
+from scipy.sparse import coo_matrix, vstack, lil_matrix
+import sys
 
 key = config.key
 
@@ -47,6 +50,8 @@ def readInGameInformation(userList, cursor):
 				if game in gameNameDict:
 					userGameNameDict[user].append(gameNameDict[game])
 					userGameTimeDict[user][game] = gameTimeList[i]
+	print "userGameTimeDict memory usage: "
+	print sys.getsizeof(userGameTimeDict)
 	return userTagDict,userGameNameDict, userGameTimeDict, gameNameDict
 	
 def clfWithTpot(X, y):
@@ -126,6 +131,18 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		chosenContinents = defaultdict(lambda: 0)
 		continentTagDict = defaultdict(lambda:defaultdict(lambda:0))
 
+
+		numberOfContinents = 7 #haut das hin??
+		print len(gameNameDict)
+		print continentLimit
+		print len(chosenContinents)
+		gameCount = len(gameNameDict)
+		#X_game_times = numpy.empty([continentLimit * numberOfContinents, gameCount])
+		#X_game_times = lil_matrix((continentLimit * numberOfContinents, gameCount)).todense()
+		
+		#print(X_game_times.shape)
+		currUser = 0
+
 		for user in userList:
 			steamId = str(user["steamid"])
 			if str(steamId) in userTagDict:
@@ -152,10 +169,25 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 
 					if chosenContinents[continent] < continentLimit :
 						chosenContinents[continent] += 1
+						#userGameTimes = coo_matrix(userGameTimes)
+						#print(userGameTimes)
 						
-						X.append(userTagList + userGameList)
-						X_game_times.append(userGameTimes)
+						#X_game_times.reshape((currUser, gameCount))
+
+
+						#X_game_times[currUser,:] = userGameTimes.todense()
+
+
+						#print sys.getsizeof(X_game_times)
+						#X.append(userTagList + userGameList)
+						#X_game_times = vstack((X_game_times, userGameTimes))
+						
+						#X_game_times.append(userGameTimes)
+						#X_game_times.append(sparse.csr_matrix(userGameTimes))
+						currUser += 1
 						y.append(continent)
+		print "X_game_times memory usage: "
+		print sys.getsizeof(X_game_times)
 		print continentCounter
 		print "\n"
 		print chosenContinents
@@ -163,9 +195,10 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		print continentTagDict
 		print "\n"
 		print len(X), len(y)
-		saveObject(X, "x_file")
-		saveObject(y, "y_file")
-		saveObject(X_game_times, "x_game_times_file")
+		print("caching data...")
+		#saveObject(X, "x_file")
+		#saveObject(y, "y_file")
+		#saveObject(X_game_times, "x_game_times_file")
 
 		print("cached x, y and x_game_times")
 
@@ -188,6 +221,8 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 
 
 	X = X_game_times
+	#X = sparse.csr_matrix(X_game_times).toarray()
+
 
 	print("X in final form")
 
@@ -217,7 +252,7 @@ try:
 	X = loadObject("x_file.pkl")
 	y = loadObject("y_file.pkl")
 	X_game_times=loadObject("x_game_times_file.pkl")
-	
+
 	print("loaded x, y and x_game_times from file")
 except:
 	pass
