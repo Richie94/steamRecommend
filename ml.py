@@ -152,7 +152,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 				userGameTimes = []
 				for game in gameNameDict:
 					userGameTimes.append(userGameTimeDict[steamId][game])
-
+				#print(sys.getsizeof(userGameTimes))
 				continent = ""
 				# threshold fuer anzahl userTags?
 				try:
@@ -182,10 +182,11 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 						#X.append(userTagList + userGameList)
 						#X_game_times = vstack((X_game_times, userGameTimes))
 						
-						#X_game_times.append(userGameTimes)
+						X_game_times.append(userGameTimes)
 						#X_game_times.append(sparse.csr_matrix(userGameTimes))
 						currUser += 1
 						y.append(continent)
+					del userGameTimes
 		print "X_game_times memory usage: "
 		print sys.getsizeof(X_game_times)
 		print continentCounter
@@ -196,9 +197,9 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		print "\n"
 		print len(X), len(y)
 		print("caching data...")
-		#saveObject(X, "x_file")
-		#saveObject(y, "y_file")
-		#saveObject(X_game_times, "x_game_times_file")
+		saveObject(X, "x_file")
+		saveObject(y, "y_file")
+		saveObject(X_game_times, "x_game_times_file")
 
 		print("cached x, y and x_game_times")
 
