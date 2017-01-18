@@ -162,6 +162,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 				userTagList = ' '.join(userTagDict[steamId])
 				userGameList = ' '.join(userGameDict[steamId])
 
+
 				continent = ""
 				# threshold fuer anzahl userTags?
 				try:
@@ -199,6 +200,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		#saveObject(X, "x_file")
 		#saveObject(y, "y_file")
 		#saveObject(X_game_times, "x_game_times_file")
+
 
 		print("cached x, y and x_game_times")
 
