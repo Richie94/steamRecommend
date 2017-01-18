@@ -34,7 +34,7 @@ key = config.key
 def readInGameInformation(userList, cursor):
 	userTagDict = defaultdict(lambda:[])
 	userGameNameDict = defaultdict(lambda:[])
-	userGameTimeDict = defaultdict(lambda:defaultdict(lambda:0))
+	userGameTimeDict = defaultdict(lambda:{})
 	gameTagDict = utils.getGameTagDict(cursor, "basicTags")
 	gameNameDict = utils.getGameNameDict(cursor)
 	userGameDict = utils.getUserGameDict(cursor)
@@ -50,8 +50,7 @@ def readInGameInformation(userList, cursor):
 				if game in gameNameDict:
 					userGameNameDict[user].append(gameNameDict[game])
 					userGameTimeDict[user][game] = gameTimeList[i]
-	print "userGameTimeDict memory usage: "
-	print sys.getsizeof(userGameTimeDict)
+		#print sys.getsizeof(userGameTimeDict)
 	return userTagDict,userGameNameDict, userGameTimeDict, gameNameDict
 	
 def clfWithTpot(X, y):
@@ -116,6 +115,25 @@ def classifyAndPrintResults(clf, clfName, X, y, mode="grid"):
 	score = accuracy_score(y_test, predictions)
 	print clfName, score
 
+def memory():
+    import os
+    from wmi import WMI
+    w = WMI('.')
+    result = w.query("SELECT WorkingSet FROM Win32_PerfRawData_PerfProc_Process WHERE IDProcess=%d" % os.getpid())
+    return int(result[0].WorkingSet)
+
+def showContinentTags():
+	counter = 0
+	for c in continentTagDict.keys():
+		figure(counter, figsize=(6,6))
+		ax = axes([0.1, 0.1, 0.8, 0.8])
+		labels = [tag for tag in continentTagDict[c]]
+		fracs = [continentTagDict[c][tag] for tag in continentTagDict[c]]
+		pie(fracs, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90)
+		title(str(c))
+		counter += 1
+	show()
+
 def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=1000):
 	if (X == []):	
 		#somehow it seems that some user do not have steamid
@@ -131,27 +149,18 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		chosenContinents = defaultdict(lambda: 0)
 		continentTagDict = defaultdict(lambda:defaultdict(lambda:0))
 
-
-		numberOfContinents = 7 #haut das hin??
-		print len(gameNameDict)
-		print continentLimit
-		print len(chosenContinents)
-		gameCount = len(gameNameDict)
 		#X_game_times = numpy.empty([continentLimit * numberOfContinents, gameCount])
-		#X_game_times = lil_matrix((continentLimit * numberOfContinents, gameCount)).todense()
+		gameCount = len(gameNameDict)
+		X_game_times = lil_matrix((len(userList), gameCount))
 		
-		#print(X_game_times.shape)
 		currUser = 0
 
 		for user in userList:
 			steamId = str(user["steamid"])
+
 			if str(steamId) in userTagDict:
 				userTagList = ' '.join(userTagDict[steamId])
 				userGameList = ' '.join(userGameDict[steamId])
-
-				userGameTimes = []
-				for game in gameNameDict:
-					userGameTimes.append(userGameTimeDict[steamId][game])
 
 				continent = ""
 				# threshold fuer anzahl userTags?
@@ -159,85 +168,64 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 					# Maybe invalid countrycode given
 					continent = transformations.cca_to_ctn(user["loccountrycode"])
 				except Exception as e:
+					print user["loccountrycode"]
+					options = {'FX': 'Europe', 'YU': 'Europe', 'BQ':'Africa', 'SS': 'Africa', 'ZR': 'Africa', 'CW': 'South America', 'SX': 'North America'}
+					continent = options[user["loccountrycode"]]
 					pass
-				if continent != "":
-					continentCounter[continent] += 1
+				
+				continentCounter[continent] += 1
 
-					# for graphs
-					for tag in userTagDict[steamId]:
-						continentTagDict[continent][tag] += 1
+				# for graphs
+				for tag in userTagDict[steamId]:
+					continentTagDict[continent][tag] += 1
 
-					if chosenContinents[continent] < continentLimit :
-						chosenContinents[continent] += 1
-						#userGameTimes = coo_matrix(userGameTimes)
-						#print(userGameTimes)
-						
-						#X_game_times.reshape((currUser, gameCount))
+				if chosenContinents[continent] < continentLimit :
+					chosenContinents[continent] += 1
 
+					counter = 0;
+					for game in gameNameDict:
+						if game in userGameTimeDict[steamId]:
+							amount = userGameTimeDict[steamId][game]
+							if (amount != 0):
+								X_game_times[currUser, counter] = amount
+						counter += 1
+					
+					currUser += 1
+					y.append(continent)
 
-						#X_game_times[currUser,:] = userGameTimes.todense()
+		print X_game_times.shape
 
-
-						#print sys.getsizeof(X_game_times)
-						#X.append(userTagList + userGameList)
-						#X_game_times = vstack((X_game_times, userGameTimes))
-						
-						#X_game_times.append(userGameTimes)
-						#X_game_times.append(sparse.csr_matrix(userGameTimes))
-						currUser += 1
-						y.append(continent)
-		print "X_game_times memory usage: "
-		print sys.getsizeof(X_game_times)
-		print continentCounter
-		print "\n"
-		print chosenContinents
-		print "\n"
-		print continentTagDict
-		print "\n"
-		print len(X), len(y)
-		print("caching data...")
+		
 		#saveObject(X, "x_file")
 		#saveObject(y, "y_file")
 		#saveObject(X_game_times, "x_game_times_file")
 
 		print("cached x, y and x_game_times")
 
-		counter = 0
-		for c in continentTagDict.keys():
-			figure(counter, figsize=(6,6))
-			ax = axes([0.1, 0.1, 0.8, 0.8])
-			labels = [tag for tag in continentTagDict[c]]
-			fracs = [continentTagDict[c][tag] for tag in continentTagDict[c]]
-			pie(fracs, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90)
-			title(str(c))
-			counter += 1
-		#show()
-	
-	# Transform String of GameTags to Counts
-	#count_vect = CountVectorizer()
-	#X = count_vect.fit_transform(X)
-	#truncSVD = TruncatedSVD(n_components=100)
-	#X = truncSVD.fit_transform(X)
+		
+	if 1 == 1:
+		# Transform String of GameTags to Counts
+		#count_vect = CountVectorizer()
+		#X = count_vect.fit_transform(X)
+		#truncSVD = TruncatedSVD(n_components=100)
+		#X = truncSVD.fit_transform(X)
 
 
-	X = X_game_times
-	#X = sparse.csr_matrix(X_game_times).toarray()
+		X = X_game_times
+		#X = sparse.csr_matrix(X_game_times).toarray()
 
 
-	print("X in final form")
-
-
-	if mode == "grid":
-		clfName = "SVM"
-		pipe = Pipeline([('clf', SVC())])
-		clf = GridSearchCV(pipe, param_grid=getParams(clfName))
-		classifyAndPrintResults(clf, clfName, X, y, mode=mode)
-	else:
-		classifiers = [("SVC",SVC()), ("GNB",GaussianNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
-		for clf_pair in classifiers:
-			clfName = clf_pair[0]
-			clf = clf_pair[1]
+		if mode == "grid":
+			clfName = "SVM"
+			pipe = Pipeline([('clf', SVC())])
+			clf = GridSearchCV(pipe, param_grid=getParams(clfName))
 			classifyAndPrintResults(clf, clfName, X, y, mode=mode)
+		else:
+			classifiers = [("SVC",SVC()), ("GNB",GaussianNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
+			for clf_pair in classifiers:
+				clfName = clf_pair[0]
+				clf = clf_pair[1]
+				classifyAndPrintResults(clf, clfName, X, y, mode=mode)
 
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
@@ -246,12 +234,12 @@ cursor = connection.cursor()
 X = []
 y = []
 # try to append gametimes to X
-X_game_times = []
+X_game_times2 = []
 
 try:
 	X = loadObject("x_file.pkl")
 	y = loadObject("y_file.pkl")
-	X_game_times=loadObject("x_game_times_file.pkl")
+	X_game_times2=loadObject("x_game_times_file.pkl")
 
 	print("loaded x, y and x_game_times from file")
 except:
@@ -259,6 +247,6 @@ except:
 
 userList = []
 if not (len(X) > 0):
-	userList = utils.readInUsers(cursor, limit=10000)
+	userList = utils.readInUsers(cursor, limit=5000)
 
-predictLand(userList, cursor, continentLimit = 1000, X=X, y=y, mode="other")
+predictLand(userList, cursor, continentLimit = 5000, X=X, y=y, mode="other")
