@@ -194,8 +194,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 					currUser += 1
 					y.append(continent)
 
-		print X_game_times.shape
-
+		X_reshaped = X_game_times[:currUser,:]
 		
 		#saveObject(X, "x_file")
 		#saveObject(y, "y_file")
@@ -213,7 +212,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		#X = truncSVD.fit_transform(X)
 
 
-		X = X_game_times
+		X = X_reshaped
 		#X = sparse.csr_matrix(X_game_times).toarray()
 
 
