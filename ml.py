@@ -10,7 +10,7 @@ import pymysql
 from collections import defaultdict
 from sklearn.model_selection import train_test_split#
 from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import TruncatedSVD
@@ -54,9 +54,6 @@ def readInGameInformation(userList, cursor):
 	return userTagDict,userGameNameDict, userGameTimeDict, gameNameDict
 	
 def clfWithTpot(X, y):
-	count_vect = CountVectorizer()
-	X = count_vect.fit_transform(X)
-
 	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.1)
 	my_tpot = TPOTClassifier(generations=4)
 	my_tpot.fit(X_train, y_train)
@@ -169,7 +166,6 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 					# Maybe invalid countrycode given
 					continent = transformations.cca_to_ctn(user["loccountrycode"])
 				except Exception as e:
-					print user["loccountrycode"]
 					options = {'FX': 'Europe', 'YU': 'Europe', 'BQ':'Africa', 'SS': 'Africa', 'ZR': 'Africa', 'CW': 'South America', 'SX': 'North America'}
 					continent = options[user["loccountrycode"]]
 					pass
@@ -196,37 +192,35 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 
 		X_reshaped = X_game_times[:currUser,:]
 		
-		#saveObject(X, "x_file")
-		#saveObject(y, "y_file")
-		#saveObject(X_game_times, "x_game_times_file")
+		saveObject(X, "x_file")
+		saveObject(y, "y_file")
+		saveObject(X_reshaped, "x_game_times_file")
 
-
+		print chosenContinents
 		print("cached x, y and x_game_times")
-
-		
-	if 1 == 1:
-		# Transform String of GameTags to Counts
-		#count_vect = CountVectorizer()
-		#X = count_vect.fit_transform(X)
-		#truncSVD = TruncatedSVD(n_components=100)
-		#X = truncSVD.fit_transform(X)
-
-
 		X = X_reshaped
-		#X = sparse.csr_matrix(X_game_times).toarray()
+		
+	
+	# Transform String of GameTags to Counts
+	#count_vect = CountVectorizer()
+	#X = count_vect.fit_transform(X)
+	#truncSVD = TruncatedSVD(n_components=100)
+	#X = truncSVD.fit_transform(X)
 
 
-		if mode == "grid":
-			clfName = "SVM"
-			pipe = Pipeline([('clf', SVC())])
-			clf = GridSearchCV(pipe, param_grid=getParams(clfName))
+	if mode == "grid":
+		clfName = "RF"
+		pipe = Pipeline([('clf', RandomForestClassifier())])
+		clf = GridSearchCV(pipe, param_grid=getParams(clfName))
+		classifyAndPrintResults(clf, clfName, X, y, mode=mode)
+	elif mode == "tpot":
+		clfWithTpot(X,y)
+	else:
+		classifiers = [("SVC",SVC()), ("GNB",MultinomialNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
+		for clf_pair in classifiers:
+			clfName = clf_pair[0]
+			clf = clf_pair[1]
 			classifyAndPrintResults(clf, clfName, X, y, mode=mode)
-		else:
-			classifiers = [("SVC",SVC()), ("GNB",GaussianNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
-			for clf_pair in classifiers:
-				clfName = clf_pair[0]
-				clf = clf_pair[1]
-				classifyAndPrintResults(clf, clfName, X, y, mode=mode)
 
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
@@ -235,19 +229,23 @@ cursor = connection.cursor()
 X = []
 y = []
 # try to append gametimes to X
-X_game_times2 = []
+X_game_times = lil_matrix((1,1))
 
 try:
 	X = loadObject("x_file.pkl")
 	y = loadObject("y_file.pkl")
-	X_game_times2=loadObject("x_game_times_file.pkl")
+	X_game_times = loadObject("x_game_times_file.pkl")
 
 	print("loaded x, y and x_game_times from file")
 except:
 	pass
 
 userList = []
-if not (len(X) > 0):
-	userList = utils.readInUsers(cursor, limit=5000)
+userAmount = 10000
+continentLimit = userAmount/6
+if not (X_game_times.shape[0] > userAmount * 0.9 ):
+	print "Load New Users"
+	userList = utils.readInUsers(cursor, limit=userAmount)
+	X_game_times, X, y = [], [], []
 
-predictLand(userList, cursor, continentLimit = 5000, X=X, y=y, mode="other")
+predictLand(userList, cursor, continentLimit=continentLimit, X=X_game_times, y=y, mode="tpot")
