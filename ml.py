@@ -21,7 +21,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MaxAbsScaler
 from pylab import *
 import operator
 from incf.countryutils import transformations
@@ -63,14 +63,14 @@ def clfWithTpot(X, y):
 
 def getParams(clf):
 	params = dict(
-		scaler = [None, MinMaxScaler()],
-		svd = [None, TruncatedSVD(n_estimators=100), TruncatedSVD(n_estimators=250)],
+		scaler = [None, MaxAbsScaler()],
+		svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
        	clf__C = [0.1, 0.2, 0.3, 0.5, 1.0, 10, 50, 100, 1000, 100000],
        	clf__gamma = [1E-4, 1E-3, 1E-2, 1E-1, 1.0, 10],
    )
 	paramsRF = dict(
-		scaler = [None, MinMaxScaler()],
-		svd = [None, TruncatedSVD(n_estimators=100), TruncatedSVD(n_estimators=250)],
+		scaler = [None, MaxAbsScaler()],
+		svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
        	clf__n_estimators = [3,5,10,15,20, 40, 80, 160, 320, 640],
        	clf__max_depth = [None, 30, 50],
        	clf__class_weight = [None, "balanced"]
@@ -203,7 +203,12 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 
 		print chosenContinents
 		print("cached x, y and x_game_times")
-		X = X_reshaped
+
+		count_vect = CountVectorizer()
+		X = count_vect.fit_transform(X)
+		X_combined = combineLilMats(X, X_reshaped)
+
+		X = X_combined
 		
 	
 	# Transform String of GameTags to Counts
@@ -252,6 +257,9 @@ try:
 	X = count_vect.fit_transform(X)
 	X_game_times = loadObject("x_game_times_file.pkl")
 	X_comb = combineLilMats(X, X_game_times)
+
+	print("X: " + str(X.shape))
+	print("X_game_times: " + str(X_game_times.shape))
 	print("Combined: " + str(X_comb.shape))
 
 	print("loaded x (%s), y (%s) and x_game_times (%s) from file" % (X.shape[0], len(y), X_game_times.shape[0]))
@@ -271,4 +279,4 @@ if not (X_game_times.shape[0] > continentLimit * 2.5 ):
 	userList = utils.readInUsers(cursor, limit=userAmount)
 	X_game_times, X, y, X_comb = [], [], [], []
 
-predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="other")
+predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="grid")
