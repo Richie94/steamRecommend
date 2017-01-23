@@ -14,6 +14,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import TruncatedSVD
+from sklearn.preprocessing import MinMaxScaler
 
 from sklearn.metrics import accuracy_score
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -62,14 +63,17 @@ def clfWithTpot(X, y):
 
 def getParams(clf):
 	params = dict(
-       clf__C = [0.1, 0.2, 0.3, 0.5, 1.0, 10, 50, 100, 1000, 100000],
-       clf__gamma = [1E-4, 1E-3, 1E-2, 1E-1, 1.0, 10],
+		scaler = [None, MinMaxScaler()],
+		svd = [None, TruncatedSVD(n_estimators=100), TruncatedSVD(n_estimators=250)],
+       	clf__C = [0.1, 0.2, 0.3, 0.5, 1.0, 10, 50, 100, 1000, 100000],
+       	clf__gamma = [1E-4, 1E-3, 1E-2, 1E-1, 1.0, 10],
    )
 	paramsRF = dict(
-       clf__n_estimators = [3,5,10,15,20],
-       clf__max_features = ["auto","log2"],
-       clf__max_depth = [None, 10, 20, 30, 50],
-       clf__class_weight = [None, "balanced"]
+		scaler = [None, MinMaxScaler()],
+		svd = [None, TruncatedSVD(n_estimators=100), TruncatedSVD(n_estimators=250)],
+       	clf__n_estimators = [3,5,10,15,20, 40, 80, 160, 320, 640],
+       	clf__max_depth = [None, 30, 50],
+       	clf__class_weight = [None, "balanced"]
    )
 	if clf == "SVM":
 		return params
@@ -186,8 +190,9 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 							if (amount != 0):
 								X_game_times[currUser, counter] = amount
 						counter += 1
-					
+
 					currUser += 1
+					X.append(userTagList + userGameList)
 					y.append(continent)
 
 		X_reshaped = X_game_times[:currUser,:]
@@ -207,20 +212,28 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 	#truncSVD = TruncatedSVD(n_components=100)
 	#X = truncSVD.fit_transform(X)
 
-
 	if mode == "grid":
 		clfName = "RF"
-		pipe = Pipeline([('clf', RandomForestClassifier())])
+		pipe = Pipeline([('scaler', MinMaxScaler()),('svd', TruncatedSVD()),('clf', RandomForestClassifier())])
 		clf = GridSearchCV(pipe, param_grid=getParams(clfName))
 		classifyAndPrintResults(clf, clfName, X, y, mode=mode)
 	elif mode == "tpot":
+		truncSVD = TruncatedSVD(n_components=150)
+		X = truncSVD.fit_transform(X)
 		clfWithTpot(X,y)
 	else:
 		classifiers = [("SVC",SVC()), ("GNB",MultinomialNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
 		for clf_pair in classifiers:
 			clfName = clf_pair[0]
 			clf = clf_pair[1]
+		
 			classifyAndPrintResults(clf, clfName, X, y, mode=mode)
+
+def combineLilMats(lilMat1, lilMat2):
+	combined = lil_matrix((lilMat1.shape[0], lilMat1.shape[1]+lilMat2.shape[1]))
+	combined[:, :lilMat1.shape[1]] = lilMat1
+	combined[:, lilMat1.shape[1]:lilMat1.shape[1]+lilMat2.shape[1]] =lilMat2
+	return combined
 
 
 connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
@@ -230,22 +243,32 @@ X = []
 y = []
 # try to append gametimes to X
 X_game_times = lil_matrix((1,1))
+X_comb = lil_matrix((1,1))
 
 try:
 	X = loadObject("x_file.pkl")
 	y = loadObject("y_file.pkl")
+	count_vect = CountVectorizer()
+	X = count_vect.fit_transform(X)
 	X_game_times = loadObject("x_game_times_file.pkl")
+	X_comb = combineLilMats(X, X_game_times)
+	print("Combined: " + str(X_comb.shape))
 
-	print("loaded x, y and x_game_times from file")
-except:
+	print("loaded x (%s), y (%s) and x_game_times (%s) from file" % (X.shape[0], len(y), X_game_times.shape[0]))
+	
+except Exception as e:
+	print str(e)
 	pass
+
+
+
 
 userList = []
 userAmount = 10000
 continentLimit = userAmount/6
-if not (X_game_times.shape[0] > userAmount * 0.9 ):
+if not (X_game_times.shape[0] > continentLimit * 2.5 ):
 	print "Load New Users"
 	userList = utils.readInUsers(cursor, limit=userAmount)
-	X_game_times, X, y = [], [], []
+	X_game_times, X, y, X_comb = [], [], [], []
 
-predictLand(userList, cursor, continentLimit=continentLimit, X=X_game_times, y=y, mode="tpot")
+predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="other")
