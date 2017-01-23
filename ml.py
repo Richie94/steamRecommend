@@ -8,7 +8,7 @@ import config, utils
 import numpy
 import pymysql
 from collections import defaultdict
-from sklearn.model_selection import train_test_split#
+from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -16,11 +16,11 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
 
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.preprocessing import MaxAbsScaler
 from pylab import *
 import operator
@@ -71,8 +71,8 @@ def getParams(clf):
 	paramsRF = dict(
 		scaler = [None, MaxAbsScaler()],
 		svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
-       	clf__n_estimators = [3,5,10,15,20, 40, 80, 160, 320, 640],
-       	clf__max_depth = [None, 30, 50],
+       	clf__n_estimators = [3, 10, 20, 80, 160, 320, 640],
+       	clf__max_depth = [None, 50],
        	clf__class_weight = [None, "balanced"]
    )
 	if clf == "SVM":
@@ -110,11 +110,13 @@ def classifyAndPrintResults(clf, clfName, X, y, mode="grid"):
 	unique, counts = numpy.unique(y_test, return_counts=True)
 	print ("y_test",dict(zip(unique, counts)))
 
-	if mode == "grid":
+	if mode == "grid" or mode == "rand":
 		print(clf.best_params_)
 
 	score = accuracy_score(y_test, predictions)
 	print clfName, score
+	print classification_report(y_test, predictions)
+	print confusion_matrix(y_test, predictions)
 
 def memory():
     import os
@@ -209,25 +211,22 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		X_combined = combineLilMats(X, X_reshaped)
 
 		X = X_combined
-		
 	
-	# Transform String of GameTags to Counts
-	#count_vect = CountVectorizer()
-	#X = count_vect.fit_transform(X)
-	#truncSVD = TruncatedSVD(n_components=100)
-	#X = truncSVD.fit_transform(X)
-
-	if mode == "grid":
+	print ("Chosen mode: " + mode)
+	if mode == "grid" or mode == "rand":
 		clfName = "RF"
-		pipe = Pipeline([('scaler', MinMaxScaler()),('svd', TruncatedSVD()),('clf', RandomForestClassifier())])
-		clf = GridSearchCV(pipe, param_grid=getParams(clfName))
+		pipe = Pipeline([('scaler', MaxAbsScaler()),('svd', TruncatedSVD()),('clf', RandomForestClassifier())])
+		if mode == "grid":	
+			clf = GridSearchCV(pipe, param_grid=getParams(clfName))
+		else:
+			clf = RandomizedSearchCV(pipe, param_distributions=getParams(clfName), n_iter = 20)
 		classifyAndPrintResults(clf, clfName, X, y, mode=mode)
 	elif mode == "tpot":
 		truncSVD = TruncatedSVD(n_components=150)
 		X = truncSVD.fit_transform(X)
 		clfWithTpot(X,y)
 	else:
-		classifiers = [("SVC",SVC()), ("GNB",MultinomialNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
+		classifiers = [("SVC",SVC()), ("MNB",MultinomialNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
 		for clf_pair in classifiers:
 			clfName = clf_pair[0]
 			clf = clf_pair[1]
@@ -279,4 +278,4 @@ if not (X_game_times.shape[0] > continentLimit * 2.5 ):
 	userList = utils.readInUsers(cursor, limit=userAmount)
 	X_game_times, X, y, X_comb = [], [], [], []
 
-predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="grid")
+predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="rand")
