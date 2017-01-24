@@ -75,8 +75,23 @@ def getParams(clf):
        	clf__max_depth = [None, 50],
        	clf__class_weight = [None, "balanced"]
    )
+	paramsKNN = dict(
+		scaler = [None, MaxAbsScaler()],
+		svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
+		clf__n_neighbors = [2, 5, 10, 30, 50],
+		clf__weights = ["uniform", "distance"],
+		#sparse input -> nur brute geht
+		clf__algorithm = ["brute"],
+		clf__leaf_size = [5, 10, 30, 30, 100, 150, 300, 600],
+		clf__metric = ["euclidean", "manhattan"],
+		clf__p = [1, 2, 3, 5, 10, 30],
+		clf__metric_params = [None],
+		#clf__n_jobs = [-1]
+		)
 	if clf == "SVM":
 		return params
+	elif clf == "KNN":
+		return paramsKNN
 	elif clf == "RF":
 		return paramsRF
 
@@ -214,12 +229,18 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 	
 	print ("Chosen mode: " + mode)
 	if mode == "grid" or mode == "rand":
-		clfName = "RF"
-		pipe = Pipeline([('scaler', MaxAbsScaler()),('svd', TruncatedSVD()),('clf', RandomForestClassifier())])
+		#hier classifier changen:
+		#clfName = "RF"
+		#pipe = Pipeline([('scaler', MaxAbsScaler()),('svd', TruncatedSVD()),('clf', RandomForestClassifier())])
+		clfName = "KNN"
+		pipe = Pipeline([('scaler', MaxAbsScaler()),('svd', TruncatedSVD()),('clf', KNeighborsClassifier())])
+		
+		custom_verbose = 1
+
 		if mode == "grid":	
-			clf = GridSearchCV(pipe, param_grid=getParams(clfName))
+			clf = GridSearchCV(pipe, param_grid=getParams(clfName), verbose=custom_verbose, n_jobs = 6)
 		else:
-			clf = RandomizedSearchCV(pipe, param_distributions=getParams(clfName), n_iter = 20)
+			clf = RandomizedSearchCV(pipe, param_distributions=getParams(clfName), n_iter = 100, verbose=custom_verbose, n_jobs= 6)
 		classifyAndPrintResults(clf, clfName, X, y, mode=mode)
 	elif mode == "tpot":
 		truncSVD = TruncatedSVD(n_components=150)
@@ -239,43 +260,43 @@ def combineLilMats(lilMat1, lilMat2):
 	combined[:, lilMat1.shape[1]:lilMat1.shape[1]+lilMat2.shape[1]] =lilMat2
 	return combined
 
+if __name__ == '__main__':
+	connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
+	cursor = connection.cursor()
 
-connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
-cursor = connection.cursor()
+	X = []
+	y = []
+	# try to append gametimes to X
+	X_game_times = lil_matrix((1,1))
+	X_comb = lil_matrix((1,1))
 
-X = []
-y = []
-# try to append gametimes to X
-X_game_times = lil_matrix((1,1))
-X_comb = lil_matrix((1,1))
+	try:
+		X = loadObject("x_file.pkl")
+		y = loadObject("y_file.pkl")
+		count_vect = CountVectorizer()
+		X = count_vect.fit_transform(X)
+		X_game_times = loadObject("x_game_times_file.pkl")
+		X_comb = combineLilMats(X, X_game_times)
 
-try:
-	X = loadObject("x_file.pkl")
-	y = loadObject("y_file.pkl")
-	count_vect = CountVectorizer()
-	X = count_vect.fit_transform(X)
-	X_game_times = loadObject("x_game_times_file.pkl")
-	X_comb = combineLilMats(X, X_game_times)
+		print("X: " + str(X.shape))
+		print("X_game_times: " + str(X_game_times.shape))
+		print("Combined: " + str(X_comb.shape))
 
-	print("X: " + str(X.shape))
-	print("X_game_times: " + str(X_game_times.shape))
-	print("Combined: " + str(X_comb.shape))
-
-	print("loaded x (%s), y (%s) and x_game_times (%s) from file" % (X.shape[0], len(y), X_game_times.shape[0]))
-	
-except Exception as e:
-	print str(e)
-	pass
-
-
+		print("loaded x (%s), y (%s) and x_game_times (%s) from file" % (X.shape[0], len(y), X_game_times.shape[0]))
+		
+	except Exception as e:
+		print str(e)
+		pass
 
 
-userList = []
-userAmount = 10000
-continentLimit = userAmount/6
-if not (X_game_times.shape[0] > continentLimit * 2.5 ):
-	print "Load New Users"
-	userList = utils.readInUsers(cursor, limit=userAmount)
-	X_game_times, X, y, X_comb = [], [], [], []
 
-predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="rand")
+
+	userList = []
+	userAmount = 10000
+	continentLimit = userAmount/6
+	if not (X_game_times.shape[0] > continentLimit * 2.5 ):
+		print "Load New Users"
+		userList = utils.readInUsers(cursor, limit=userAmount)
+		X_game_times, X, y, X_comb = [], [], [], []
+
+	predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="rand")
