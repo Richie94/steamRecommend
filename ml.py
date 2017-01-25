@@ -41,16 +41,21 @@ def readInGameInformation(userList, cursor):
 	userGameDict = utils.getUserGameDict(cursor)
 	for user in userList:
 		if user in userGameDict:
-			gameList = userGameDict[user].split(",")
-			gameTimeList = [int(game.split(":")[1]) for game in gameList]
-			gameList = [int(game.split(":")[0]) for game in gameList]
-			for i in range(len(gameList)):
-				game = gameList[i]
-				if game in gameTagDict:
-					userTagDict[user].extend(gameTagDict[game])
-				if game in gameNameDict:
-					userGameNameDict[user].append(gameNameDict[game])
-					userGameTimeDict[user][game] = gameTimeList[i]
+			try:
+				gameList = userGameDict[user].split(",")
+				gameTimeList = [int(game.split(":")[1]) for game in gameList]
+				gameList = [int(game.split(":")[0]) for game in gameList]
+				for i in range(len(gameList)):
+					game = gameList[i]
+					if game in gameTagDict:
+						userTagDict[user].extend(gameTagDict[game])
+					if game in gameNameDict:
+						userGameNameDict[user].append(gameNameDict[game])
+						userGameTimeDict[user][game] = gameTimeList[i]
+			except Exception as e:
+				print(str(e))
+				pass
+
 		#print sys.getsizeof(userGameTimeDict)
 	return userTagDict,userGameNameDict, userGameTimeDict, gameNameDict
 	
@@ -76,17 +81,26 @@ def getParams(clf):
        	clf__class_weight = [None, "balanced"]
    )
 	paramsKNN = dict(
-		scaler = [None, MaxAbsScaler()],
-		svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
-		clf__n_neighbors = [2, 5, 10, 30, 50],
-		clf__weights = ["uniform", "distance"],
+		#scaler = [None, MaxAbsScaler()],
+		#svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
+		#clf__n_neighbors = [2, 5, 10, 30, 50],
+		#clf__weights = ["uniform", "distance"],
+		#sparse input -> nur brute geht
+		#clf__algorithm = ["brute"],
+		#clf__leaf_size = [5, 10, 30, 30, 100, 150, 300, 600],
+		#clf__metric = ["euclidean", "manhattan"],
+		#clf__p = [1, 2, 3, 5, 10, 30],
+		#clf__metric_params = [None],
+		scaler = [MaxAbsScaler()],
+		svd = [None, TruncatedSVD(n_components=100)],
+		clf__n_neighbors = [50,75],
+		clf__weights = ["uniform"],
 		#sparse input -> nur brute geht
 		clf__algorithm = ["brute"],
-		clf__leaf_size = [5, 10, 30, 30, 100, 150, 300, 600],
-		clf__metric = ["euclidean", "manhattan"],
-		clf__p = [1, 2, 3, 5, 10, 30],
+		clf__leaf_size = [30],
+		clf__metric = ["euclidean"],
+		clf__p = [30,40],
 		clf__metric_params = [None],
-		#clf__n_jobs = [-1]
 		)
 	if clf == "SVM":
 		return params
@@ -191,6 +205,9 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 					continent = options[user["loccountrycode"]]
 					pass
 				
+				if(continent != 'Europe' and continent != 'North America' and continent != 'South America'):
+					continue
+
 				continentCounter[continent] += 1
 
 				# for graphs
@@ -292,11 +309,13 @@ if __name__ == '__main__':
 
 
 	userList = []
-	userAmount = 10000
-	continentLimit = userAmount/6
+	#userAmount = 10000
+	userAmount = 100000
+	#continentLimit = userAmount/6
+	continentLimit = userAmount/3
 	if not (X_game_times.shape[0] > continentLimit * 2.5 ):
 		print "Load New Users"
 		userList = utils.readInUsers(cursor, limit=userAmount)
 		X_game_times, X, y, X_comb = [], [], [], []
 
-	predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="rand")
+	predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="grid")
