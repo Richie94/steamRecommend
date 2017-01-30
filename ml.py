@@ -56,6 +56,7 @@ def readInGameInformation(userList, cursor):
 			except Exception as e:
 				print("ReadInGameInformation: ", str(e))
 				pass
+
 	return userTagDict,userGameNameDict, userGameTimeDict, gameNameDict
 	
 def clfWithTpot(X, y):
@@ -83,6 +84,28 @@ def getParams(clf):
 		scaler = [None],
 		svd = [None, TruncatedSVD(n_components = 100), TruncatedSVD(n_components = 1000), TruncatedSVD(n_components = 5000)]
 	)
+	paramsKNN = dict(
+		#scaler = [None, MaxAbsScaler()],
+		#svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
+		#clf__n_neighbors = [2, 5, 10, 30, 50],
+		#clf__weights = ["uniform", "distance"],
+		#sparse input -> nur brute geht
+		#clf__algorithm = ["brute"],
+		#clf__leaf_size = [5, 10, 30, 30, 100, 150, 300, 600],
+		#clf__metric = ["euclidean", "manhattan"],
+		#clf__p = [1, 2, 3, 5, 10, 30],
+		#clf__metric_params = [None],
+		scaler = [MaxAbsScaler()],
+		svd = [None, TruncatedSVD(n_components=100)],
+		clf__n_neighbors = [50,75],
+		clf__weights = ["uniform"],
+		#sparse input -> nur brute geht
+		clf__algorithm = ["brute"],
+		clf__leaf_size = [30],
+		clf__metric = ["euclidean"],
+		clf__p = [30,40],
+		clf__metric_params = [None],
+		)
 	if clf == "SVM":
 		return params
 	elif clf == "RF":
@@ -202,7 +225,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 				
 				#print continent
 				if continent != 'Europe' and continent != 'North America' and continent != 'South America' and continent != 'Asia':
-					continue
+
 
 				continentCounter[continent] += 1
 
