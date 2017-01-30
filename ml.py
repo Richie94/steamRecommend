@@ -37,7 +37,7 @@ def readInGameInformation(userList, cursor):
 	userTagDict = defaultdict(lambda:[])
 	userGameNameDict = defaultdict(lambda:[])
 	userGameTimeDict = defaultdict(lambda:{})
-	gameTagDict = utils.getGameTagDict(cursor, "basicTags")
+	gameTagDict = utils.getGameTagDict(cursor, "transformedGameTags")
 	gameNameDict = utils.getGameNameDict(cursor)
 	userGameDict = utils.getUserGameDict(cursor)
 	for user in userList:
@@ -189,15 +189,12 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		userTagDict,userGameDict, userGameTimeDict, gameNameDict = readInGameInformation(userIdList, cursor)
 
 		print("All Game Information from DB collected")
-		# try to append gametimes to X
-		#X_game_times = []
 
 		# try to not have too much of the same continents
 		continentCounter = defaultdict(lambda: 0)
 		chosenContinents = defaultdict(lambda: 0)
 		continentTagDict = defaultdict(lambda:defaultdict(lambda:0))
 
-		#X_game_times = numpy.empty([continentLimit * numberOfContinents, gameCount])
 		gameCount = len(gameNameDict)
 		X_game_times = lil_matrix((len(userList), gameCount))
 		
@@ -212,9 +209,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 				userTagList = ' '.join(userTagDict[steamId])
 				userGameList = ' '.join(userGameDict[steamId])
 
-
 				continent = ""
-				# threshold fuer anzahl userTags?
 				try:
 					# Maybe invalid countrycode given
 					continent = transformations.cca_to_ctn(user["loccountrycode"])
@@ -223,9 +218,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 					continent = options[user["loccountrycode"]]
 					pass
 				
-				#print continent
-				if continent != 'Europe' and continent != 'North America' and continent != 'South America' and continent != 'Asia':
-
+				#if continent != 'Europe' and continent != 'North America' and continent != 'South America' and continent != 'Asia':
 
 				continentCounter[continent] += 1
 
@@ -264,14 +257,10 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		X = X_combined
 	
 	print ("Chosen mode: " + mode)
-	#truncSVD = TruncatedSVD(n_components=2500)
-	#X = truncSVD.fit_transform(X)
-	#scaler = MaxAbsScaler()
-	#X = scaler.fit_transform(X)
 	print ("X Data in Shape: " + str(X.shape))
 	if mode == "grid" or mode == "rand":
 		clfName = "RF"
-		pipe = Pipeline([('svd', TruncatedSVD()),('scaler', MaxAbsScaler()),('clf', RandomForestClassifier())])
+		pipe = Pipeline([('clf', RandomForestClassifier())])
 		if mode == "grid":	
 			clf = GridSearchCV(pipe, param_grid=getParams(clfName), verbose = 10, n_jobs = 2)
 		else:
@@ -292,8 +281,9 @@ def combineLilMats(lilMat1, lilMat2):
 	partSize = 1000
 	for i in range(lilMat1.shape[1]/partSize):
 		combined[:, i*partSize:(i+1)*partSize] = lilMat1[:, i*partSize:(i+1)*partSize]
-	#combined[:, :lilMat1.shape[1]] = lilMat1
-	combined[:, lilMat1.shape[1]:lilMat1.shape[1]+lilMat2.shape[1]] = lilMat2
+
+	for i in range(lilMat2.shape[1]/partSize):
+		combined[:, lilMat1.shape[1]+i*part:lilMat1.shape[1]+(i+1)*partSize] = lilMat2[:, i*partSize:(i+1)*partSize]
 	return combined
 
 
