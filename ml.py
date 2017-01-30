@@ -13,8 +13,9 @@ from sklearn.svm import SVC
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.decomposition import TruncatedSVD
+from sklearn.decomposition import TruncatedSVD, SparsePCA
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.cluster import KMeans
 
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -41,22 +42,25 @@ def readInGameInformation(userList, cursor):
 	userGameDict = utils.getUserGameDict(cursor)
 	for user in userList:
 		if user in userGameDict:
-			gameList = userGameDict[user].split(",")
-			gameTimeList = [int(game.split(":")[1]) for game in gameList]
-			gameList = [int(game.split(":")[0]) for game in gameList]
-			for i in range(len(gameList)):
-				game = gameList[i]
-				if game in gameTagDict:
-					userTagDict[user].extend(gameTagDict[game])
-				if game in gameNameDict:
-					userGameNameDict[user].append(gameNameDict[game])
-					userGameTimeDict[user][game] = gameTimeList[i]
-		#print sys.getsizeof(userGameTimeDict)
+			try:
+				gameList = userGameDict[user].split(",")
+				gameTimeList = [int(game.split(":")[1]) for game in gameList]
+				gameList = [int(game.split(":")[0]) for game in gameList]
+				for i in range(len(gameList)):
+					game = gameList[i]
+					if game in gameTagDict:
+						userTagDict[user].extend(gameTagDict[game])
+					if game in gameNameDict:
+						userGameNameDict[user].append(gameNameDict[game])
+						userGameTimeDict[user][game] = gameTimeList[i]
+			except Exception as e:
+				print("ReadInGameInformation: ", str(e))
+				pass
 	return userTagDict,userGameNameDict, userGameTimeDict, gameNameDict
 	
 def clfWithTpot(X, y):
 	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.1)
-	my_tpot = TPOTClassifier(generations=4)
+	my_tpot = TPOTClassifier(generations = 5, verbosity = 2)
 	my_tpot.fit(X_train, y_train)
 	print(my_tpot.score(X_test, y_test))
 	my_tpot.export('exported_pipeline.py')
@@ -69,31 +73,22 @@ def getParams(clf):
        	clf__gamma = [1E-4, 1E-3, 1E-2, 1E-1, 1.0, 10],
    )
 	paramsRF = dict(
-		scaler = [None, MaxAbsScaler()],
-		svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
-       	clf__n_estimators = [3, 10, 20, 80, 160, 320, 640],
-       	clf__max_depth = [None, 50],
-       	clf__class_weight = [None, "balanced"]
+		clf__n_estimators = [320],
+       	clf__max_depth = [None],
+       	clf__min_samples_split = [2], 
+       	clf__class_weight = [None]
    )
-	paramsKNN = dict(
-		scaler = [None, MaxAbsScaler()],
-		svd = [None, TruncatedSVD(n_components=100), TruncatedSVD(n_components=250)],
-		clf__n_neighbors = [2, 5, 10, 30, 50],
-		clf__weights = ["uniform", "distance"],
-		#sparse input -> nur brute geht
-		clf__algorithm = ["brute"],
-		clf__leaf_size = [5, 10, 30, 30, 100, 150, 300, 600],
-		clf__metric = ["euclidean", "manhattan"],
-		clf__p = [1, 2, 3, 5, 10, 30],
-		clf__metric_params = [None],
-		#clf__n_jobs = [-1]
-		)
+	paramsAB = dict(
+		clf__n_estimators = [150],
+		scaler = [None],
+		svd = [None, TruncatedSVD(n_components = 100), TruncatedSVD(n_components = 1000), TruncatedSVD(n_components = 5000)]
+	)
 	if clf == "SVM":
 		return params
-	elif clf == "KNN":
-		return paramsKNN
 	elif clf == "RF":
 		return paramsRF
+	elif clf == "AB":
+		return paramsAB
 
 def saveObject(toSave, name):
 	with open(name+'.pkl', 'wb') as output:
@@ -112,6 +107,17 @@ def appendArrayToX(X, newColumn):
 		_tmp.append(newColumn[i])
 		new_X.append(_tmp)
 	return new_X
+
+def arrayDiff(a1, a2):
+	diff = 0
+	maxDiff = 0
+	for i in range(len(a1)):
+		_diff = abs(a1[i]-a2[i])
+		diff += _diff
+		if _diff > maxDiff:
+			maxDiff = _diff
+	return diff, maxDiff
+
 
 def classifyAndPrintResults(clf, clfName, X, y, mode="grid"):
 	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.1)
@@ -159,6 +165,7 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		userIdList = [user["steamid"] for user in userList if "steamid" in user]
 		userTagDict,userGameDict, userGameTimeDict, gameNameDict = readInGameInformation(userIdList, cursor)
 
+		print("All Game Information from DB collected")
 		# try to append gametimes to X
 		#X_game_times = []
 
@@ -174,6 +181,8 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		currUser = 0
 
 		for user in userList:
+			if currUser % 300 == 0:
+				print currUser
 			steamId = str(user["steamid"])
 
 			if str(steamId) in userTagDict:
@@ -191,6 +200,10 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 					continent = options[user["loccountrycode"]]
 					pass
 				
+				#print continent
+				if continent != 'Europe' and continent != 'North America' and continent != 'South America' and continent != 'Asia':
+					continue
+
 				continentCounter[continent] += 1
 
 				# for graphs
@@ -209,10 +222,10 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 						counter += 1
 
 					currUser += 1
-					X.append(userTagList + userGameList)
+					X.append(userTagList)
 					y.append(continent)
 
-		X_reshaped = X_game_times[:currUser,:]
+		X_reshaped = lil_matrix(X_game_times[:currUser,:])
 		
 		saveObject(X, "x_file")
 		saveObject(y, "y_file")
@@ -228,23 +241,20 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 		X = X_combined
 	
 	print ("Chosen mode: " + mode)
+	#truncSVD = TruncatedSVD(n_components=2500)
+	#X = truncSVD.fit_transform(X)
+	#scaler = MaxAbsScaler()
+	#X = scaler.fit_transform(X)
+	print ("X Data in Shape: " + str(X.shape))
 	if mode == "grid" or mode == "rand":
-		#hier classifier changen:
-		#clfName = "RF"
-		#pipe = Pipeline([('scaler', MaxAbsScaler()),('svd', TruncatedSVD()),('clf', RandomForestClassifier())])
-		clfName = "KNN"
-		pipe = Pipeline([('scaler', MaxAbsScaler()),('svd', TruncatedSVD()),('clf', KNeighborsClassifier())])
-		
-		custom_verbose = 1
-
+		clfName = "RF"
+		pipe = Pipeline([('svd', TruncatedSVD()),('scaler', MaxAbsScaler()),('clf', RandomForestClassifier())])
 		if mode == "grid":	
-			clf = GridSearchCV(pipe, param_grid=getParams(clfName), verbose=custom_verbose, n_jobs = 6)
+			clf = GridSearchCV(pipe, param_grid=getParams(clfName), verbose = 10, n_jobs = 2)
 		else:
-			clf = RandomizedSearchCV(pipe, param_distributions=getParams(clfName), n_iter = 100, verbose=custom_verbose, n_jobs= 6)
+			clf = RandomizedSearchCV(pipe, param_distributions=getParams(clfName), n_iter = 20, verbose = 10, n_jobs = 2)
 		classifyAndPrintResults(clf, clfName, X, y, mode=mode)
 	elif mode == "tpot":
-		truncSVD = TruncatedSVD(n_components=150)
-		X = truncSVD.fit_transform(X)
 		clfWithTpot(X,y)
 	else:
 		classifiers = [("SVC",SVC()), ("MNB",MultinomialNB()), ("RF",RandomForestClassifier()), ("AB",AdaBoostClassifier()), ("KNN",KNeighborsClassifier())]
@@ -256,11 +266,15 @@ def predictLand(userList,cursor, X = [], y = [], mode="grid", continentLimit=100
 
 def combineLilMats(lilMat1, lilMat2):
 	combined = lil_matrix((lilMat1.shape[0], lilMat1.shape[1]+lilMat2.shape[1]))
-	combined[:, :lilMat1.shape[1]] = lilMat1
-	combined[:, lilMat1.shape[1]:lilMat1.shape[1]+lilMat2.shape[1]] =lilMat2
+	partSize = 1000
+	for i in range(lilMat1.shape[1]/partSize):
+		combined[:, i*partSize:(i+1)*partSize] = lilMat1[:, i*partSize:(i+1)*partSize]
+	#combined[:, :lilMat1.shape[1]] = lilMat1
+	combined[:, lilMat1.shape[1]:lilMat1.shape[1]+lilMat2.shape[1]] = lilMat2
 	return combined
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 	connection = pymysql.connect(host=config.db_ip, port=int(config.db_port), user=config.db_user, passwd=config.db_pass, db="steamrec", autocommit = True, cursorclass=pymysql.cursors.DictCursor)
 	cursor = connection.cursor()
 
@@ -276,27 +290,29 @@ if __name__ == '__main__':
 		count_vect = CountVectorizer()
 		X = count_vect.fit_transform(X)
 		X_game_times = loadObject("x_game_times_file.pkl")
-		X_comb = combineLilMats(X, X_game_times)
+		print("loaded x (%s), y (%s) and x_game_times (%s) from file" % (X.shape[0], len(y), X_game_times.shape[0]))
+		#X_comb = loadObject("X_comb.pkl")
+		X_comb = combineLilMats(X_game_times, X)
+
 
 		print("X: " + str(X.shape))
 		print("X_game_times: " + str(X_game_times.shape))
 		print("Combined: " + str(X_comb.shape))
 
-		print("loaded x (%s), y (%s) and x_game_times (%s) from file" % (X.shape[0], len(y), X_game_times.shape[0]))
+		saveObject(X_comb, "X_comb.pkl")
+
 		
 	except Exception as e:
 		print str(e)
 		pass
 
-
-
-
 	userList = []
-	userAmount = 10000
-	continentLimit = userAmount/6
+	userAmount = 25000
+	continentLimit = userAmount/5
+
 	if not (X_game_times.shape[0] > continentLimit * 2.5 ):
 		print "Load New Users"
 		userList = utils.readInUsers(cursor, limit=userAmount)
 		X_game_times, X, y, X_comb = [], [], [], []
 
-	predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="rand")
+	predictLand(userList, cursor, continentLimit=continentLimit, X=X_comb, y=y, mode="tpot")
