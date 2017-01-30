@@ -1,0 +1,331 @@
+Sports	Pool	14
+Casual	Bowling	8
+Adventure	Choices Matter	210
+Naval	Sailing	28
+Action	3D Vision	128
+Action	Hunting	50
+Action	On-Rails Shooter	46
+Simulation	Trains	62
+Politics	Political	68
+Singleplayer	Demons	74
+Adventure	Crime	114
+Indie	Rogue-like	676
+Indie	Action	7656
+Simulation	Management	440
+Strategy	Turn-Based	808
+Strategy	Base-Building	142
+Casual	Gambling	14
+Indie	Comedy	786
+Singleplayer	Dynamic Narration	24
+Singleplayer	Crowdfunded	58
+Documentary	Gaming	300
+Action	Mythology	32
+Atmospheric	Nonlinear	8
+Singleplayer	Linear	88
+Adventure	Dystopian 	114
+Singleplayer	Benchmark	18
+Action	Controller	542
+Action	Quick-Time Events	60
+Indie	Soundtrack	32
+Action	2.5D	110
+Indie	Music-Based Procedural Generation	38
+Action	Western	58
+Action	First-Person	1288
+Action	Ninja	86
+VR	Intentionally Awkward Controls	4
+Horror	Thriller	52
+Indie	Adventure	6202
+Strategy	World War I	38
+Indie	Lemmings	18
+Adventure	Magic	158
+Strategy	Wargame	118
+Singleplayer	Great Soundtrack	1940
+Indie	Steampunk	160
+Action	Heist	48
+Singleplayer	Time Manipulation	38
+Adventure	Lore-Rich	26
+Indie	Simulation	2596
+Indie	2D	1978
+Simulation	Realistic	292
+Strategy	Rome	36
+Female Protagonist	Lara Croft	26
+RPG	Grid-Based Movement	56
+Singleplayer	Remake	158
+Action	Military	234
+Action	Assassin	70
+Strategy	Economy	196
+Action	Third Person	968
+Simulation	God Game	58
+Utilities	Video Production	56
+Action	Twin Stick Shooter	224
+Adventure	Pirates	104
+Adventure	Exploration	722
+Indie	Singleplayer	3764
+Indie	Action	7656
+Action	Aliens	206
+Singleplayer	Classic	856
+Singleplayer	Real-Time with Pause	142
+Indie	Clicker	62
+Adventure	Dragons	78
+Design &amp; Illustration	Web Publishing	28
+Strategy	Trading	62
+Sci-fi	Cyberpunk	190
+Action	Gun Customization	20
+Action	Bullet Time	56
+Adventure	Supernatural	56
+Action	Top-Down Shooter	198
+Indie	Education	152
+Action	Swordplay	62
+Action	Class-Based	44
+Action	Open World	1462
+Adventure	Point &amp; Click	1192
+Indie	Underwater	48
+Indie	Dark Comedy	24
+Indie	GameMaker	60
+Action	Arcade	992
+Sports	Wrestling	10
+Casual	NSFW	6
+Funny	Satire	40
+Strategy	Resource Management	132
+Simulation	Sports	564
+Visual Novel	Romance	148
+Action	Spectacle fighter	44
+Indie	Retro	892
+Action	Bullet Hell	360
+Indie	Typing	24
+Adventure	Underground	4
+Indie	Memes	330
+Casual	Pinball	28
+RPG	Inventory Management	30
+Indie	Difficult	1274
+Action	Action RPG	506
+Strategy	Real-Time	84
+Adventure	Episodic	224
+Action	Parkour	184
+Indie	Relaxing	258
+Indie	Kickstarter	192
+Adventure	Horror	1392
+Strategy	Hex Grid	92
+Design &amp; Illustration	Utilities	94
+Adventure	Cinematic	62
+Singleplayer	Stylized	124
+Adventure	Drama	84
+Adventure	Post-apocalyptic	246
+Strategy	RTS	652
+Adventure	Point & Click	18
+Action	America	46
+Indie	Cartoon	72
+Indie	Psychedelic	70
+Action	Third-Person Shooter	430
+Indie	Minimalist	202
+Indie	Short	436
+Strategy	City Builder	194
+Singleplayer	Medieval	220
+Action	Action-Adventure	272
+Strategy	Tower Defense	424
+Indie	Programming	48
+Anime	Visual Novel	580
+Indie	Interactive Fiction	146
+Action	4 Player Local	292
+Games Workshop	Warhammer 40K	46
+Action	e-sports	48
+Indie	Anime	918
+Strategy	Historical	338
+Strategy	Real Time Tactics	70
+RPG	Loot	102
+Action	Beat 'em up	296
+Adventure	Cult Classic	110
+Action	Metroidvania	250
+Indie	Cartoony	114
+Action	Side Scroller	436
+Indie	Procedural Generation	306
+Indie	Perma Death	182
+Action	2D Fighter	94
+Design &amp; Illustration	Animation &amp; Modeling	136
+Strategy	Diplomacy	22
+Adventure	Nudity	384
+Indie	Abstract	108
+Indie	VR	850
+Adventure	Philisophical	14
+Sports	Football	80
+Singleplayer	Gothic	66
+Action	Stealth	452
+Indie	Narration	68
+Action	Time Attack	30
+Adventure	Comic Book	64
+Design &amp; Illustration	Tutorial	92
+Indie	Puzzle-Platformer	452
+RPG	Isometric	234
+Action	MOBA	188
+Singleplayer	Mature	222
+Indie	Funny	986
+Action	Gore	646
+Action	Robots	222
+Adventure	Lovecraftian	90
+Indie	Mouse only	56
+Indie	Music	242
+Indie	Mystery Dungeon	6
+Strategy	Cold War	44
+Strategy	Strategy RPG	76
+Action	Racing	550
+Action	War	288
+RPG	JRPG	348
+Action	Split Screen	102
+Action	Co-op	1678
+Action	Free to Play	1062
+Indie	Spelling	10
+Indie	Platformer	1752
+Action	Fast-Paced	410
+Indie	Physics	406
+Indie	Space	740
+FPS	1990s	6
+Indie	Score Attack	70
+Racing	Offroad	44
+Strategy	Card Game	216
+Sports	Mini Golf	14
+Strategy	Tanks	70
+Singleplayer	Modern	26
+Action	Character Action Game	52
+RPG	Dungeon Crawler	268
+Space	Space Sim	142
+Indie	Word Game	20
+Indie	Villain Protagonist	50
+Multiplayer	PvP	296
+Indie	Crafting	380
+Action	Multiplayer	2736
+Singleplayer	Atmospheric	1878
+RPG	Tactical RPG	72
+Anime	Dating Sim	202
+Action	Silent Protagonist	26
+Adventure	FMV	78
+Indie	Science	52
+Action	Massively Multiplayer	778
+Indie	Experimental	130
+Strategy	Asynchronous Multiplayer	28
+Indie	Werewolves	24
+Action	PvE	62
+Action	Zombies	702
+Adventure	Story Rich	1358
+Indie	Sokoban	24
+Casual	Hidden Object	448
+Singleplayer	Replay Value	386
+Adventure	Based On A Novel	50
+Adventure	Female Protagonist	1240
+Utilities	Software	62
+Action	Star Wars	54
+Indie	Cute	544
+Singleplayer	Steam Machine	10
+Design &amp; Illustration	Animation &amp; Modeling	136
+Documentary	Game Development	172
+Action	Shoot 'Em Up	720
+Indie	Puzzle	2032
+Action	Team-Based	176
+Indie	Parody 	74
+Horror	Survival Horror	392
+Nudity	Sexual Content	110
+Singleplayer	Moddable	326
+Indie	Runner	62
+Indie	Hand-drawn	116
+Action	6DOF	34
+RPG	RPGMaker	448
+Massively Multiplayer	MMORPG	280
+Action	Co-op Campaign	28
+Action	Mod	84
+Action	Martial Arts	38
+Design &amp; Illustration	Photo Editing	30
+Strategy	Trading Card Game	66
+Indie	Voxel	104
+RPG	CRPG	106
+Adventure	Mystery	486
+Visual Novel	Otome	110
+Sports	Basketball	24
+Action	Superhero	80
+Strategy	Grand Strategy	206
+Action	Movie	114
+Action	Character Customization	192
+Sci-fi	Mars	32
+Documentary	Gaming	300
+Adventure	Vampire	50
+Indie	Strategy	3328
+Indie	1980s	84
+Indie	Surreal	196
+Strategy	Turn-Based Tactics	188
+Adventure	LEGO	38
+Strategy	Chess	38
+Indie	Rhythm	140
+Adventure	Dark Humor	128
+Sports	Soccer	66
+Indie	Hacking	64
+Casual	Family Friendly	584
+Simulation	Driving	142
+Simulation	Horses	22
+Simulation	Agriculture	44
+Indie	Mining	18
+Simulation	Flight	148
+Action	Sci-fi	1346
+Indie	Colorful	274
+Adventure	Fantasy	1068
+RPG	Party-Based RPG	106
+Indie	Pixel Graphics	1472
+Action	Survival	928
+Classic	1990's	140
+Action	Transhumanism	12
+Singleplayer	Dark	326
+Action	Dinosaurs	64
+Adventure	Noir	114
+Action	Online Co-Op	604
+RPG	Turn-Based Combat	170
+Indie	Blood	76
+Indie	RPG	2964
+Adventure	Detective	200
+Indie	Building	348
+Sports	Golf	22
+Indie	3D Platformer	152
+Action	Sniper	28
+Singleplayer	Multiple Endings	144
+Education	Software Training	84
+Adventure	Time Travel	74
+Action	Destruction	120
+Action	Hack and Slash	434
+Strategy	Naval	78
+Strategy	4X	204
+Indie	Psychological Horror	484
+Indie	Top-Down	328
+Strategy	Board Game	196
+Action	Shooter	1890
+Singleplayer	Games Workshop	94
+Indie	Choose Your Own Adventure	210
+Singleplayer	Dark Fantasy	172
+Thriller	Foreign	2
+Movie	Feature Film	30
+Singleplayer	Sandbox	830
+Steam Machine	Hardware	6
+Action	Fighting	356
+Action	FPS	1492
+Action	Arena Shooter	148
+Indie	Level Editor	146
+Strategy	Capitalism	22
+Action	Local Co-Op	682
+Indie	Early Access	1912
+Sci-fi	Futuristic	188
+Utilities	Audio Production	32
+Strategy	Tactical	620
+Action	Mechs	136
+Strategy	World War II	232
+Indie	Touch-Friendly	140
+Casual	Match 3	154
+Indie	Illuminati	170
+Singleplayer	Alternate History	52
+Strategy	Turn-Based Strategy	614
+Action	Competitive	320
+Indie	Psychological	76
+Indie	Rogue-lite	336
+Action	Violent	210
+Adventure	Conspiracy	42
+Simulation	Fishing	26
+Indie	Walking Simulator	394
+Action	Batman	30
+Politics	Political	68
+Action	Local Multiplayer	542
+Indie	Casual	5092
+Simulation	TrackIR	48
