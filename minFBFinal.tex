@@ -5,6 +5,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{multicol}
 \usepackage{eurosym}
 \author{Richard Kwasnicki, Eric Schölzel, Ulrich Huber}
 \title{Mining Facebook - Steam Crawling}
@@ -128,6 +129,7 @@
 %\subsection{Klassenverteilung}
 \begin{frame}[fragile]{Klassenverteilung}
 	Einfluss ungleichmäßiger Verteilungen auf manche Klassifikatoren: \\
+	\medskip
 	\begin{tabular}{|l|l|l|l|l|l|}
 		\hline
 		Real \textbackslash Predicted & Asia & Eu & NA & SA & Summe\\
@@ -137,12 +139,16 @@
 		South America & 3 & 179 & 22 & \textbf{14} & 218 \\
 		\hline
 	\end{tabular}
-	\begin{itemize}
-		\item Richtig: 1336
-		\item Falsch: 1022
-		\item f1-Score: 0,566581849
-		\item Immer Europa f1-Score: 0,5818490246
-	\end{itemize}				
+	
+	\begin{multicols}{2}
+		\begin{itemize}
+			\item Richtig: 1336
+			\item Falsch: 1022
+			\medskip
+			\item f1-Score: 0,566581849
+			\item Immer Europa f1-Score: 0,5818490246
+		\end{itemize}	
+	\end{multicols}			
 \end{frame}
 
 %\subsection{Bestes RF Confusion Matrix Resultat}
@@ -159,12 +165,15 @@
 		South America & 99 & 72 & 65 & \textbf{284} \\
 		\hline
 	\end{tabular}
-	\begin{itemize}
-		\item Richtig: 1107
-		\item Falsch: 893
-		\item f1-Score: 0,5535
-		\item Immer Europa f1-Score: 0,2575
-	\end{itemize}
+	\begin{multicols}{2}
+		\begin{itemize}
+			\item Richtig: 1107
+			\item Falsch: 893
+			\medskip			
+			\item f1-Score: 0,5535
+			\item Immer Europa f1-Score: 0,2575
+		\end{itemize}
+	\end{multicols}
 \end{frame}
 
 \begin{frame}[fragile]{Overfitting?}
@@ -180,12 +189,15 @@
 		South America & 120 & 73 & 61 & \textbf{234} \\
 		\hline
 	\end{tabular}
-	\begin{itemize}
-		\item Richtig: 882
-		\item Falsch: 1118
-		\item f1-Score: 0,441
-		\item Immer Europa f1-Score: 0,267
-	\end{itemize}
+	\begin{multicols}{2}
+		\begin{itemize}
+			\item Richtig: 882
+			\item Falsch: 1118
+			\medskip
+			\item f1-Score: 0,441
+			\item Immer Europa f1-Score: 0,267
+		\end{itemize}
+	\end{multicols}
 \end{frame}
 
 %\subsection{Schlussfolgerungen}
