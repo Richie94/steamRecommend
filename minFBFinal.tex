@@ -165,7 +165,7 @@ South America & 3 & 179 & 22 & \textbf{14} & 218 \\
 %\subsection{Bestes RF Confusion Matrix Resultat}
 \begin{frame}[fragile]{Beste RF Confusion Matrix}
 Random Forest, 320 Estimators, ohne PCA/LSA, ohne Scaler \\
-Datensatz: 20000 User (5000 pro Kontinent), Spielzeiten, Spielnamen, reduzierte Gametags \\
+Datensatz: 20000 User (5000 pro Kontinent), Spielzeiten, Spielnamen, reduzierte Gametags (21.000 Dimensionen!)\\
 \medskip
 \begin{tabular}{| l| l| l| l| l|}
 \hline
@@ -184,6 +184,27 @@ South America & 99 & 72 & 65 & \textbf{284} \\
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]{Overfitting?}
+Random Forest, 320 Estimators, Mit LSA (Reduktion auf 10 Dimensionen), ohne Scaler \\
+Datensatz: 20000 User (5000 pro Kontinent), Spielnamen, reduzierte Gametags \\
+\medskip
+\begin{tabular}{| l| l| l| l| l|}
+\hline
+Real \textbackslash Predicted & Asia & Eu & NA & SA \\
+Asia & \textbf{174} & 81 & 74 & 166 \\
+Europe & 72 & \textbf{222} & 157 & 83 \\
+North America & 52 & 115 & \textbf{252} & 64 \\
+South America & 120 & 73 & 61 & \textbf{234} \\
+\hline
+\end{tabular}
+\begin{itemize}
+\item Richtig: 882
+\item Falsch: 1118
+\item f1-Score: 0,441
+\item Immer Europa f1-Score: 0,267
+\end{itemize}
+\end{frame}
+
 %\subsection{Schlussfolgerungen}
 \begin{frame}[fragile]{Schlussfolgerungen}
 \begin{itemize}
@@ -198,10 +219,6 @@ $ \rightarrow $ vermutlich Trends erkannt bspw
 \item Anzahl Spiele in Bibliothek
 \item Beliebte Genres
 \end{itemize}  
-
 \end{frame}
-
-
-
 
 \end{document}
