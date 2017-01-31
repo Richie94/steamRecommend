@@ -91,27 +91,49 @@
 \end{frame}
 
 \begin{frame}{•}
-\frametitle{Eingesetzte Daten - Aufbereitung}
-\begin{itemize}
-\item API liefert alle von Nutzern angegebenen Tags zurück -$>$ viel zu viele Tags
-\item Reduktion notwendig
-\item Iteration über alle Spiele, Gruppierung "collapsing" von Tags
-\item Beispiel Grand Strategy (weniger) und Strategy (mehr) kommen oft zusammen vor, werden zussamengefasst
-%Beispiel CS tausende Tags zu ~10
-\end{itemize}
-
+	\frametitle{Eingesetzte Daten - Aufbereitung}
+	%TODO Grafik mit Matrix
+	Erstellen einer Matrix je Nutzer für den Classifier
+	\begin{itemize}
+		\item Variante 1: eine Dimension je GameTag
+		\item Variante 2: eine Dimension je GameTag und Spiel
+	\end{itemize}
+	enthalten jeweils Spielzeiten für jeweiliges GameTag bzw. Spiel
+	-$>$ sparse matrix
+	
 \end{frame}
+
 
 
 \begin{frame}{•}
 \frametitle{Methoden - Dimensionsreduktion}
 \begin{itemize}
-%TODO Grafik mit Matrix
 \item "Curse of Dimensionality"
 \item Lösungsansätze: TruncatedSVD (PCA), Reduktion der GameTags
 \item Genauigkeit verschlechtert!
 \end{itemize}
+
 \end{frame}
+
+\begin{frame}{•}
+	\frametitle{Eingesetzte Daten - Dimensionsreduktion - GameTags}
+	\begin{itemize}
+		\item API liefert alle von Nutzern angegebenen Tags zurück -$>$ viel zu viele Tags
+		\item Reduktion notwendig
+		\item Iteration über alle Spiele, Gruppierung "collapsing" von Tags
+		\item Beispiel Grand Strategy (weniger) und Strategy (mehr) kommen oft zusammen vor, werden zusamengefasst
+	\end{itemize}
+	
+\end{frame}
+
+\begin{frame}{•}
+	Beispiel CounterStrike: \newline \newblock
+	\frametitle{Methoden - Dimensionsreduktion - GameTags}
+	\includegraphics[width=1\textwidth]{img/cs_gametag_reduction.png}
+\end{frame}	
+
+
+
 
 
 \begin{frame}{•}
