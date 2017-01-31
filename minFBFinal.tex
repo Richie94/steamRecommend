@@ -1,5 +1,5 @@
 \documentclass[12pt]{beamer}
-\usetheme{Amsterdam}
+\usetheme{Warsaw}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -23,77 +23,61 @@
 %steam logo
 \end{frame}
 
-%\begin{frame}
-%\tableofcontents
-%\end{frame}
+
 \section{Steam}
 %Intro - Steam
-\begin{frame}{•}
-\frametitle{Steam - Eine Gaming Plattform}
+\begin{frame}{Steam - Eine Gaming Plattform}
 \begin{itemize}
 \item Digitale Vertriebsplattform von Valve Corp.
 \item Mehr als 125 Mio. "aktive" accounts
 \item Rund 12 Mio. Peak am Tag
-\item Höchste Anzahl gleichzeitiger Benutzer: 13 205 928
 \item Umsatz in 2015:  3.5 Milliarden Dollar (schätzungsweise 15\% des PC-Spiel Marktes)
-\item User data (Profil, Freunde, Spiele Spielzeit,\newline Achievements ,...) über API verfügbar
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{•}
-\frametitle{Warum Steam?}
+\begin{frame}{Warum Steam?}
 \begin{itemize}
 \item Große Mengen an Daten leicht abgreifbar
-\item Umfangreiches API
+\item Umfangreiche API
 \item Unter Anderem: Profile, Spiele, Spielzeiten und Freunde abrufbar falls Profil öffentlich 
 \end{itemize}
-%\begin{itemize}
-%\end{itemize}
 \end{frame}
 
-\begin{frame}{•}
+\begin{frame}{Alle gesammelten Daten}
 \begin{itemize}
-\frametitle{Alle gesammelten Daten}
 \item 289.542 Benutzer
-\item 260377 Mit öffentlichem Profil
-\item 12711 Spiele mitsamt Tags
+\item 260.377 Mit öffentlichem Profil
+\item 12.711 Spiele mitsamt Tags
 \item 12.684.184 Mio. Spiele von Benutzern
-\item 836467 Freundschaftseinträge (nicht komplett)
+\item 836.467 Freundschaftseinträge (nicht komplett)
 %TODO Graphen
 %TODO Fun facts avg game time, avg game time 2weeks, 
 \end{itemize}
 \end{frame}
 
-\begin{frame}{•}
+\begin{frame}{Ziel}
 \begin{itemize}
-\frametitle{Ziel}
 %TODO Bild mit Fragezeichenflagge
 %https://upload.wikimedia.org/wikipedia/commons/7/75/Transparent_flag_with_question_mark.png
 %Bei länderzzuordnung: fast immer USA obwohl nur 40 Prozent
 \item Frage: Lassen sich Benutzer anhand des Spielverhaltens regional zuordnen?
-\item -$>$ Erster Gedanke Länderzuordnung, aber zu "unsicher", zu viele Länder
+\begin{itemize}
+\item Erster Gedanke: Länderzuordnung, aber zu "unsicher", zu viele Länder
 \item Einschränkung auf Kontinentzuordnung
+\end{itemize}
+
 \end{itemize}
 \end{frame}
 
 \section{Daten}
-\begin{frame}{•}
-\frametitle{Eingesetzte Daten - Allgemein}
-\begin{itemize}
-\item Users
-\item User Games
-\item User Game Times (insgesamte Spielzeit)
-\item Game Names
-\item Game Tags
-%Beispiel Datenbankeinträge
-\end{itemize}
+\begin{frame}{Eingesetzte Daten - Allgemein}
+\includegraphics[scale=0.5]{steam_richard_info.png}
 \end{frame}
 
-\begin{frame}{•}
-\frametitle{Eingesetzte Daten - Aufbereitung}
+\begin{frame}{Eingesetzte Daten - Aufbereitung}
 \begin{itemize}
-\item API liefert alle von Nutzern angegebenen Tags zurück -$>$ viel zu viele Tags
+\item API liefert alle von Nutzern angegebenen Tags zurück $\rightarrow$ möglicherweise zu viele Tags
 \item Reduktion notwendig
 \item Iteration über alle Spiele, Gruppierung "collapsing" von Tags
 \item Beispiel Grand Strategy (weniger) und Strategy (mehr) kommen oft zusammen vor, werden zussamengefasst
@@ -103,24 +87,17 @@
 \end{frame}
 
 
-\begin{frame}{•}
-\frametitle{Methoden - Dimensionsreduktion}
+\begin{frame}{Methoden - Dimensionsreduktion}
 \begin{itemize}
 %TODO Grafik mit Matrix
-\item "Curse of Dimensionality"
-\item Lösungsansätze: TruncatedSVD (PCA), Reduktion der GameTags
-\item Genauigkeit verschlechtert!
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{•}
-\frametitle{Methoden - Classifier}
+\item "Curse of Dimensionality" (\textasciitilde 12.000 Games + \textasciitilde 10.000 Dimensionen durch Gametags und Spielenamen)
+\item Lösungsansätze:
 \begin{itemize}
-\item SVM, am Anfang, da einfach, aber skaliert schlecht
-\item KNN
-%\item TPOT
-\item SGD, sehr gut skalierbar, und partial fit möglich
+\item Reduktion der GameTags (mögliche redundante und unaussagekräftige Tags)
+\item TruncatedSVD (PCA)
+\end{itemize}
+\item Gametagreduktion: Kaum Performancegewinn
+\item TruncatedSVD: Leichte Verschlechertung der Genauigkeit (abhängig von Anzahl der Dimensionen), dafür deutlicher Performancegewinn
 \end{itemize}
 \end{frame}
 
@@ -138,9 +115,10 @@ Getestet mit Grid/Randomized Search:
 \item SGD
 \end{itemize}
 
-Resultat: Alle mit ähnlichen f1-Scores
+Resultat: Alle mit ähnlichen f1-Scores \\
 Problem: Teils sehr lange Laufzeiten für einzelne Fits (bspw. 10min bei Random Forest)
 \end{frame}
+
 %\subsection{Klassenverteilung}
 \begin{frame}[fragile]{Klassenverteilung}
 Einfluss ungleichmäßiger Verteilungen auf manche Klassifikatoren: \\
