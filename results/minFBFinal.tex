@@ -1,5 +1,5 @@
 \documentclass[12pt]{beamer}
-\usetheme{Warsaw}
+\usetheme{Amsterdam}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -8,7 +8,7 @@
 \usepackage{multicol}
 \usepackage{eurosym}
 \author{Richard Kwasnicki, Eric Schölzel, Ulrich Huber}
-\title{Mining Facebook - Steam Crawling}
+\title{Mining Facebook - Steam}
 %\setbeamercovered{transparent} 
 \setbeamertemplate{navigation symbols}{} 
 %\logo{\makebox[1\paperwidth]{\includegraphics[width=.5cm,keepaspectratio]{steam.png}}} 
@@ -38,23 +38,13 @@
 
 \begin{frame}{Warum Steam?}
 	\begin{itemize}
-		\item Große Mengen an Daten leicht abgreifbar
+		\item Große Mengen an Daten leicht abrufbar
 		\item Umfangreiche API
 		\item Unter Anderem: Profile, Spiele, Spielzeiten und Freunde abrufbar falls Profil öffentlich 
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Alle gesammelten Daten}
-	\begin{itemize}
-		\item 289.542 Benutzer
-		\item 260.377 Mit öffentlichem Profil
-		\item 12.711 Spiele mitsamt Tags
-		\item 12.684.184 Spiele von Benutzern (Schnitt: 48 pro User)
-		\item 836.467 Freundschaftseinträge (nicht komplett)
-		%TODO Graphen
-		%TODO Fun facts avg game time, avg game time 2weeks, 
-	\end{itemize}
-\end{frame}
+
 
 \begin{frame}{Ziel}
 	\centerline{\includegraphics[scale=0.3]{img/question_flag.png}}
@@ -69,6 +59,36 @@
 \end{frame}
 
 \section{Daten}
+\begin{frame}{Alle gesammelten Daten}
+	\begin{itemize}
+		\item 289.542 Benutzer insgesamt
+		\item 260.377  Benutzer mit öffentlichem Profil
+		\item 166.062 Benutzer mit öffentlichem Profil und angegebener Nationalität
+		
+		\item 12.684.184 Spiele von Benutzern
+		\item 12.711 Spiele mitsamt Tags
+		%TODO Graphen
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Max Musteruser}
+
+	\begin{itemize}
+	\item ... besitzt 49 Spiele
+	\item ... hat 20 Spiele aus seiner Bibliothek niemals gestartet
+	\item ... hat insgesamt 1152,59 Stunden (~48 Tage) gespielt (23h pro Spiel)
+	\item ... hat mit einer Wahrscheinlichkeit von 63,5\%  CS:GO gekauft
+	\item ... hat einen 4 Jahre und 9 Tage alten account
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Kontinentverteilung}
+	\centerline{\includegraphics[scale=0.53]{img/continents.png}}
+\end{frame}
+
+
+
+
 \begin{frame}{Eingesetzte Daten - Allgemein}
 	\includegraphics[scale=0.5]{img/steam_richard_info.png}
 \end{frame}
@@ -97,7 +117,7 @@
 		\item TruncatedSVD (PCA)
 		\end{itemize}
 	\item Gametagreduktion: Kaum Performancegewinn
-	\item TruncatedSVD: Leichte Verschlechertung der Genauigkeit (abhängig von Anzahl der Dimensionen), dafür deutlicher Performancegewinn
+	\item TruncatedSVD: Leichte Verschlechterung der Genauigkeit (abhängig von Anzahl der Dimensionen), dafür deutlicher Performancegewinn
 	\end{itemize}
 \end{frame}
 
@@ -205,13 +225,36 @@
 		\item f1-Score: 0,5535
 		\item Immer Europa f1-Score: 0,2575
 	\end{itemize}
-	Unsere Pipeline ist mehr als Doppelt so gut wie reines Raten der größten Klasse. \\
+	Unsere Pipeline ist mehr als doppelt so gut wie reines Raten der größten Klasse. \\
 	$ \rightarrow $ vermutlich Trends erkannt bspw
 	\begin{itemize}
 		\item Gesamtspielzeit
 		\item Beliebte Spiele je Kontinent
 		\item Anzahl Spiele in Bibliothek
 		\item Beliebte Genres
+	\end{itemize}  
+\end{frame}
+
+\begin{frame}[fragile]{Schlussfolgerungen}
+	\begin{itemize}
+		\item f1-Score: 0,5535
+		\item Immer Europa f1-Score: 0,2575
+	\end{itemize}
+	Unsere Pipeline ist mehr als doppelt so gut wie reines Raten der größten Klasse. \\
+	$ \rightarrow $ vermutlich Trends erkannt bspw
+	\begin{itemize}
+		\item Gesamtspielzeit
+		\item Beliebte Spiele je Kontinent
+		\item Anzahl Spiele in Bibliothek
+		\item Beliebte Genres
+	\end{itemize}  
+\end{frame}
+
+\begin{frame}[fragile]{Schlussfolgerungen}
+Andererseits: mögliche Probleme
+	\begin{itemize}
+		\item Zwei der größten Publisher, EA und Ubisoft, haben eigene Vertriebsplattformen (Origin, Uplay) -$>$ manche Gruppen/Klassen versteckt?
+		\item Steam wird für AAA Spiele oft als DRM verwendet (The Elder Scrolls, Call of Duty, etc.) -$>$ eventueller Einfluss von Accounts mit nur einem Spiel (20792), die nicht repräsentativ sind
 	\end{itemize}  
 \end{frame}
 \end{document}
