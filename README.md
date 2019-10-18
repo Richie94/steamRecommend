@@ -1,1 +1,2 @@
 # steamRecommend
+Collection of scripts and results for some Web-Scraping and MachineLearning module at university. 'src' contains some python scripts we can and results is a collection publicity is not interested in because its mainly dirty. If you havnt been in this tutorial just have a look at the source folder.
